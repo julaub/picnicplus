@@ -6,6 +6,7 @@ import { initializeMap, renderClusters } from './components/map.js';
 import { initializeNavigation } from './components/navigation.js';
 import { initParticipants } from './components/participants.js';
 import { initPotluck } from './components/potluck.js';
+import { initPicnicTab } from './components/picnic-tab.js';
 import { checkUrlForPicnic, createPicnic, joinPicnic, state } from './state.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -38,6 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initializeNavigation();
     initParticipants('participants-container');
     initPotluck('potluck-container');
+    initPicnicTab('picnic-dashboard-container');
 
     let addedConditions = [];
     let currentClusters = [];
@@ -146,8 +148,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         await createPicnic(picnicName, lat, lon, organizerName);
         updateStatus(`Picnic created! Share the URL with friends.`, 'success');
 
-        // Switch to Participants tab to show creation success
-        document.querySelector('.nav-btn[data-target="view-participants"]').click();
+        // Switch to Picnic tab to show creation success and the dashboard
+        document.querySelector('.nav-btn[data-target="view-picnic"]').click();
     };
 
     // --- Orchestration Logic ---
@@ -265,6 +267,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             map.setView([state.picnicDetails.lat, state.picnicDetails.lon], 16);
             L.marker([state.picnicDetails.lat, state.picnicDetails.lon]).addTo(map).bindPopup(`<b>${state.picnicDetails.name}</b>`).openPopup();
         }
+
+        // Switch to the picnic tab when joining via URL
+        setTimeout(() => {
+            const picnicBtn = document.querySelector('.nav-btn[data-target="view-picnic"]');
+            if (picnicBtn) {
+                picnicBtn.style.display = 'flex'; // Ensure it's visible before clicking
+                picnicBtn.click();
+            }
+        }, 100);
 
     } else {
         updateStatus("Welcome! Select amenities and click 'Find Amenity Clusters'.");

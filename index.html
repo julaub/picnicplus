@@ -20,6 +20,7 @@
     <!-- Custom Styles -->
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="css/views.css">
+    <link rel="stylesheet" href="css/dashboard.css">
 </head>
 
 <body>
@@ -151,6 +152,19 @@
             </button>
         </main>
 
+        <!-- Picnic Synthesis View -->
+        <main id="view-picnic" class="app-view hidden layout-centered">
+            <div class="glass-panel main-panel view-panel">
+                <header class="view-header">
+                    <h2>🧺 Your Picnic</h2>
+                    <p class="subtitle" id="picnic-name-display">Loading...</p>
+                </header>
+                <div class="view-content" id="picnic-dashboard-container">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </main>
+
         <!-- Participants View -->
         <main id="view-participants" class="app-view hidden layout-centered">
             <div class="glass-panel main-panel view-panel">
@@ -181,6 +195,10 @@
 
         <!-- Bottom Navigation Bar -->
         <nav class="bottom-nav glass-panel">
+            <button class="nav-btn" id="nav-btn-picnic" data-target="view-picnic" style="display: none;">
+                <span class="nav-icon">🧺</span>
+                <span class="nav-label">Picnic</span>
+            </button>
             <button class="nav-btn active" data-target="view-map">
                 <span class="nav-icon">🗺️</span>
                 <span class="nav-label">Map</span>
