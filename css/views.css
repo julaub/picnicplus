@@ -1,0 +1,203 @@
+/* =========================================
+   App Views & Navigation
+   ========================================= */
+
+.app-view {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-bounce), transform var(--transition-bounce);
+    transform: scale(0.98);
+}
+
+.app-view.active {
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 10;
+    transform: scale(1);
+}
+
+.app-view.hidden {
+    display: none;
+    /* Only hidden initially to prevent FOUC, layout uses active class */
+}
+
+/* Centered Panels for Non-Map Views */
+.layout-centered {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    padding-bottom: 100px;
+    /* Space for bottom nav */
+    background: radial-gradient(circle at center, var(--bg-dark), #000);
+    overflow-y: auto;
+}
+
+.view-panel {
+    width: 100%;
+    max-width: 600px;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    min-height: 50vh;
+}
+
+.view-header {
+    padding: 24px;
+    border-bottom: 1px solid var(--border-glass);
+}
+
+.view-header h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: -0.5px;
+}
+
+.view-content {
+    padding: 24px;
+    flex: 1;
+}
+
+/* =========================================
+   Bottom Navigation
+   ========================================= */
+.bottom-nav {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 30px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+.nav-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    padding: 10px 20px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all var(--transition-fast);
+}
+
+.nav-btn.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-main);
+}
+
+.nav-btn:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-icon {
+    font-size: 18px;
+}
+
+.nav-label {
+    font-size: 14px;
+    font-weight: 500;
+    display: none;
+    /* Hide labels on mobile by default */
+}
+
+.nav-btn.active .nav-label {
+    display: block;
+}
+
+@media (min-width: 768px) {
+    .nav-label {
+        display: block;
+        /* Show labels on desktop */
+    }
+
+    .bottom-nav {
+        bottom: 30px;
+    }
+}
+
+/* Make sure mobile map button clears nav bar */
+.mobile-open {
+    bottom: 90px;
+}
+
+/* =========================================
+   Potluck & List Specific Styles
+   ========================================= */
+.potluck-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.potluck-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-bounce);
+}
+
+.potluck-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateY(-2px);
+}
+
+.item-name {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.strike-through {
+    text-decoration: line-through;
+    color: var(--text-muted);
+}
+
+.claim-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+    margin-top: 0;
+    width: auto;
+}
+
+.claimed-badge {
+    font-size: 13px;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px 10px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.opacity-75 {
+    opacity: 0.75;
+}
+
+.mt-4 {
+    margin-top: 24px;
+}
+
+.add-item-container {
+    border-top: 1px solid var(--border-glass);
+    padding-top: 24px;
+}

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Find the perfect picnic spot with specific amenities like fire pits, water, and shelter.">
+    <title>Picnic Finder | Discover Perfect Spots</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/views.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- App Views -->
+        <main id="view-map" class="app-view active">
+            <!-- Map Background -->
+            <div id="map" class="map-container"></div>
+
+            <!-- Sidebar Floating Panel (Only on Map View) -->
+            <aside class="sidebar glass-panel">
+                <header class="sidebar-header">
+                    <div class="logo-area">
+                        <span class="logo-emoji">🧺</span>
+                        <h1>Picnic Finder</h1>
+                    </div>
+                    <p class="subtitle">Discover perfect outdoor spots</p>
+                    <button id="mobile-toggle" class="mobile-toggle" aria-label="Toggle Sidebar">
+                        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2"
+                            fill="none" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </header>
+
+                <div class="sidebar-content">
+                    <!-- Location Search -->
+                    <section class="control-section fade-in delay-1">
+                        <h3>1. Search Location</h3>
+                        <div class="input-group">
+                            <input type="text" id="location-input" placeholder="Enter city, park, or region..."
+                                aria-label="Location search input">
+                            <button id="search-button" class="btn-icon" aria-label="Search">
+                                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2"
+                                    fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- Amenities Filter -->
+                    <section class="control-section fade-in delay-2">
+                        <h3>2. Select Amenities</h3>
+                        <div class="amenity-accordion" id="amenity-section">
+                            <!-- Populated by JS -->
+                        </div>
+                    </section>
+
+                    <!-- Proximity Conditions -->
+                    <section class="control-section fade-in delay-3">
+                        <div class="flex-header">
+                            <h3>3. Proximity Items (AND)</h3>
+                            <div class="tooltip" aria-label="Must be within distance of the cluster">
+                                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2"
+                                    fill="none" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <path d="M12 16v-4"></path>
+                                    <path d="M12 8h.01"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="proximity-controls">
+                            <select id="condition-type" class="modern-select">
+                                <option value="bus_stop">Bus Stop</option>
+                                <option value="supermarket">Supermarket</option>
+                                <option value="convenience">Convenience Store</option>
+                                <option value="parking">Parking</option>
+                            </select>
+                            <div class="distance-wrapper">
+                                <span>&lt;</span>
+                                <input type="number" id="condition-distance" value="150" min="50" max="1000" step="50"
+                                    class="distance-input">
+                                <span>m</span>
+                            </div>
+                            <button id="add-condition-button" class="btn-secondary">Add</button>
+                        </div>
+                        <div id="added-conditions-list" class="conditions-list style-scroll"></div>
+                    </section>
+
+                    <!-- Search Options -->
+                    <section class="control-section fade-in delay-4">
+                        <h3>4. Search Options</h3>
+                        <div class="slider-group">
+                            <div class="slider-header">
+                                <label for="distance-slider">Cluster Tracking Radius</label>
+                                <span class="value-badge"><span id="distance-value">100</span>m</span>
+                            </div>
+                            <input type="range" id="distance-slider" min="20" max="500" value="100" step="10"
+                                class="modern-slider">
+                        </div>
+
+                        <label class="custom-checkbox modern-toggle">
+                            <input type="checkbox" id="require-all-groups-checkbox">
+                            <span class="checkmark"></span>
+                            <span class="label-text">Require 1+ from EACH selected group</span>
+                        </label>
+
+                        <button id="find-button" class="btn-primary pulse-hover">
+                            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2"
+                                fill="none" stroke-linecap="round" stroke-linejoin="round" class="btn-icon-svg">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                <circle cx="12" cy="10" r="3"></circle>
+                            </svg>
+                            Find Amenity Clusters
+                        </button>
+                    </section>
+                </div>
+
+                <footer class="sidebar-footer fade-in delay-5">
+                    <div id="status" class="status-bar neutral">
+                        <span class="status-icon">ℹ️</span>
+                        <span class="status-text">Select amenities and find clusters.</span>
+                    </div>
+                </footer>
+            </aside>
+
+            <!-- Mobile open button -->
+            <button id="mobile-open" class="mobile-open btn-primary glass-panel" aria-label="Open Filters">
+                <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+                Filters
+            </button>
+        </main>
+
+        <!-- Participants View -->
+        <main id="view-participants" class="app-view hidden layout-centered">
+            <div class="glass-panel main-panel view-panel">
+                <header class="view-header">
+                    <h2>👥 Who's Coming</h2>
+                    <p class="subtitle">Manage the guest list</p>
+                </header>
+                <div class="view-content" id="participants-container">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </main>
+
+        <!-- Potluck View -->
+        <main id="view-potluck" class="app-view hidden layout-centered">
+            <div class="glass-panel main-panel view-panel">
+                <header class="view-header flex-header">
+                    <div>
+                        <h2>🍔 Food & Drinks</h2>
+                        <p class="subtitle">Claim what you're bringing</p>
+                    </div>
+                </header>
+                <div class="view-content" id="potluck-container">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </main>
+
+        <!-- Bottom Navigation Bar -->
+        <nav class="bottom-nav glass-panel">
+            <button class="nav-btn active" data-target="view-map">
+                <span class="nav-icon">🗺️</span>
+                <span class="nav-label">Map</span>
+            </button>
+            <button class="nav-btn" data-target="view-participants">
+                <span class="nav-icon">👥</span>
+                <span class="nav-label">Guests</span>
+            </button>
+            <button class="nav-btn" data-target="view-potluck">
+                <span class="nav-icon">🍔</span>
+                <span class="nav-label">Potluck</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- Application Logic -->
+    <script type="module" src="js/main.js"></script>
+</body>
+
+</html>
