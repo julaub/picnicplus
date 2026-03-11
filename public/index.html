@@ -212,11 +212,37 @@
                 <span class="nav-label">Potluck</span>
             </button>
         </nav>
+
+        <!-- Custom Date/Time Picker Modal -->
+        <div id="date-picker-modal" class="apple-modal-overlay hidden">
+            <div class="apple-modal glass-panel">
+                <div class="apple-modal-header">
+                    <h3 id="date-picker-title">Select Date & Time</h3>
+                </div>
+                <div class="apple-modal-body">
+                    <div class="apple-input-group">
+                        <label for="apple-date-input">Date</label>
+                        <input type="date" id="apple-date-input" class="apple-native-input">
+                    </div>
+                    <div class="apple-input-group">
+                        <label for="apple-time-input">Time</label>
+                        <input type="time" id="apple-time-input" class="apple-native-input">
+                    </div>
+                </div>
+                <div class="apple-modal-footer">
+                    <button id="date-picker-cancel" class="btn-secondary apple-btn">Cancel</button>
+                    <button id="date-picker-confirm" class="btn-primary apple-btn">Confirm</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
     <!-- Application Logic -->
     <script type="module" src="js/main.js"></script>

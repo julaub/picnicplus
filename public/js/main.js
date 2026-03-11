@@ -8,6 +8,7 @@ import { initParticipants } from './components/participants.js';
 import { initPotluck } from './components/potluck.js';
 import { initPicnicTab } from './components/picnic-tab.js';
 import { checkUrlForPicnic, createPicnic, joinPicnic, state } from './state.js';
+import { requestDateAndTime } from './components/date-picker.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // UI Elements
@@ -144,8 +145,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const organizerName = prompt("What is your name?");
         if (!organizerName) return;
 
+        const dateResult = await requestDateAndTime();
+        if (!dateResult) return; // User cancelled
+        const { dateText, timeText } = dateResult;
+
         updateStatus(`Creating Picnic...`, 'loading');
-        await createPicnic(picnicName, lat, lon, organizerName);
+        await createPicnic(picnicName, lat, lon, organizerName, dateText, timeText);
         updateStatus(`Picnic created! Share the URL with friends.`, 'success');
 
         // Switch to Picnic tab to show creation success and the dashboard

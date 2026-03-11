@@ -6,10 +6,27 @@ export const state = {
     picnicDetails: null,
     currentUser: null, // { id, name, role, avatar }
     participants: [],
-    potluckItems: []
+    potluckItems: [],
+    dates: []
 };
 
 const API_BASE = 'http://localhost:3000/api';
+const SOCKET_URL = 'http://localhost:3000';
+
+let socket = null;
+
+const initSocket = () => {
+    if (!socket && window.io) {
+        socket = window.io(SOCKET_URL);
+        
+        socket.on('picnic-updated', (data) => {
+            if (data.picnicId === state.picnicId) {
+                // Background fetch to update state without full refresh
+                fetchPicnic(state.picnicId, true);
+            }
+        });
+    }
+};
 
 export const dispatchStateUpdate = (topic) => {
     window.dispatchEvent(new CustomEvent('stateUpdated', { detail: { topic } }));
@@ -27,7 +44,7 @@ export const checkUrlForPicnic = async () => {
 };
 
 // API: Fetch Picnic
-export const fetchPicnic = async (id) => {
+export const fetchPicnic = async (id, isBackgroundUpdate = false) => {
     try {
         const res = await fetch(`${API_BASE}/picnics/${id}`);
         if (!res.ok) throw new Error('Picnic not found');
@@ -37,6 +54,7 @@ export const fetchPicnic = async (id) => {
         state.picnicDetails = { name: data.name, lat: data.lat, lon: data.lon };
         state.participants = data.participants;
         state.potluckItems = data.potluckItems;
+        state.dates = data.dates || [];
 
         // Check if I am already a participant in localStorage
         const savedUser = localStorage.getItem(`picnic_user_${id}`);
@@ -44,22 +62,32 @@ export const fetchPicnic = async (id) => {
             state.currentUser = JSON.parse(savedUser);
         }
 
+        // Initialize socket and join room if this is the first load
+        if (!isBackgroundUpdate) {
+            initSocket();
+            if (socket) {
+                socket.emit('join-picnic', id);
+            }
+        }
+
         dispatchStateUpdate('all');
         return data;
     } catch (err) {
         console.error(err);
-        alert('Could not load picnic.');
-        window.location.hash = '';
+        if (!isBackgroundUpdate) {
+            alert('Could not load picnic.');
+            window.location.hash = '';
+        }
     }
 };
 
 // API: Create Picnic
-export const createPicnic = async (name, lat, lon, organizerName) => {
+export const createPicnic = async (name, lat, lon, organizerName, dateText, timeText) => {
     try {
         const res = await fetch(`${API_BASE}/picnics`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, lat, lon, organizerName, avatar: '👑' })
+            body: JSON.stringify({ name, lat, lon, organizerName, avatar: '👑', dateText, timeText })
         });
         if (!res.ok) throw new Error('Failed to create picnic');
         const data = await res.json();
@@ -130,5 +158,39 @@ export const claimPotluckItemApi = async (itemId) => {
     } catch (err) {
         console.error(err);
         alert('Error claiming item');
+    }
+};
+
+// API: Propose Date
+export const proposeDateApi = async (dateText, timeText) => {
+    if (!state.picnicId || !state.currentUser) return;
+    try {
+        const res = await fetch(`${API_BASE}/picnics/${state.picnicId}/dates`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dateText, timeText, participantId: state.currentUser.id })
+        });
+        if (!res.ok) throw new Error('Failed to propose date');
+        await fetchPicnic(state.picnicId);
+    } catch (err) {
+        console.error(err);
+        alert('Error proposing date');
+    }
+};
+
+// API: Toggle Vote
+export const toggleVoteApi = async (dateId) => {
+    if (!state.picnicId || !state.currentUser) return;
+    try {
+        const res = await fetch(`${API_BASE}/picnics/${state.picnicId}/dates/${dateId}/vote`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ participantId: state.currentUser.id })
+        });
+        if (!res.ok) throw new Error('Failed to toggle vote');
+        await fetchPicnic(state.picnicId);
+    } catch (err) {
+        console.error(err);
+        alert('Error toggling vote');
     }
 };
