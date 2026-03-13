@@ -1,6 +1,41 @@
 import { state, proposeDateApi, toggleVoteApi } from '../state.js';
 import { requestDateAndTime } from './date-picker.js';
 
+// Cache for reverse geocoding results to avoid redundant API calls
+const locationCache = {};
+
+const reverseGeocode = async (lat, lon) => {
+    const key = `${lat},${lon}`;
+    if (locationCache[key]) return locationCache[key];
+
+    try {
+        const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=16&addressdetails=1`,
+            { headers: { 'Accept-Language': navigator.language || 'en' } }
+        );
+        if (!res.ok) return null;
+        const data = await res.json();
+
+        // Build a concise display name from address parts
+        const addr = data.address || {};
+        const parts = [];
+        // Prefer: park/leisure name > neighbourhood > suburb > city
+        const placeName = addr.leisure || addr.park || addr.amenity || addr.tourism || '';
+        if (placeName) parts.push(placeName);
+        const area = addr.suburb || addr.neighbourhood || addr.village || addr.town || '';
+        if (area && area !== placeName) parts.push(area);
+        const city = addr.city || addr.municipality || addr.county || '';
+        if (city && city !== area) parts.push(city);
+
+        const displayName = parts.length > 0 ? parts.join(', ') : (data.display_name || null);
+        locationCache[key] = displayName;
+        return displayName;
+    } catch (err) {
+        console.error('Reverse geocoding error:', err);
+        return null;
+    }
+};
+
 export const initPicnicTab = (containerId) => {
     const container = document.getElementById(containerId);
     const titleDisplay = document.getElementById('picnic-name-display');
@@ -49,10 +84,17 @@ export const initPicnicTab = (containerId) => {
         locCard.innerHTML = `
             <div class="card-icon">📍</div>
             <div class="card-title">Location</div>
-            <div class="card-value">View on Map</div>
+            <div class="card-value" id="location-name">Loading location...</div>
             <div class="card-subtext">Tap to see the exact spot</div>
         `;
         gridDiv.appendChild(locCard);
+
+        // Resolve location name asynchronously
+        const { lat, lon } = state.picnicDetails;
+        reverseGeocode(lat, lon).then(name => {
+            const el = document.getElementById('location-name');
+            if (el) el.textContent = name || 'View on Map';
+        });
 
         // Guests Card
         const guestCard = document.createElement('div');
