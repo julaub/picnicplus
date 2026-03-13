@@ -128,13 +128,13 @@ export const joinPicnic = async (name) => {
 };
 
 // API: Add Potluck Item
-export const addPotluckItemApi = async (name) => {
+export const addPotluckItemApi = async (name, quantity = 1) => {
     if (!state.picnicId || !state.currentUser) return;
     try {
         const res = await fetch(`${API_BASE}/picnics/${state.picnicId}/potluck`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, addedBy: state.currentUser.name })
+            body: JSON.stringify({ name, quantity, addedBy: state.currentUser.name })
         });
         if (!res.ok) throw new Error('Failed to add item');
         await fetchPicnic(state.picnicId);
@@ -145,19 +145,34 @@ export const addPotluckItemApi = async (name) => {
 };
 
 // API: Claim Potluck Item
-export const claimPotluckItemApi = async (itemId) => {
+export const claimPotluckItemApi = async (itemId, quantity = 1) => {
     if (!state.picnicId || !state.currentUser) return;
     try {
         const res = await fetch(`${API_BASE}/picnics/${state.picnicId}/potluck/${itemId}/claim`, {
-            method: 'PUT',
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ participantId: state.currentUser.id })
+            body: JSON.stringify({ participantId: state.currentUser.id, quantity })
         });
         if (!res.ok) throw new Error('Failed to claim item');
         await fetchPicnic(state.picnicId);
     } catch (err) {
         console.error(err);
         alert('Error claiming item');
+    }
+};
+
+// API: Remove Potluck Item
+export const removePotluckItemApi = async (itemId) => {
+    if (!state.picnicId || !state.currentUser) return;
+    try {
+        const res = await fetch(`${API_BASE}/picnics/${state.picnicId}/potluck/${itemId}`, {
+            method: 'DELETE'
+        });
+        if (!res.ok) throw new Error('Failed to remove item');
+        await fetchPicnic(state.picnicId);
+    } catch (err) {
+        console.error(err);
+        alert('Error removing item');
     }
 };
 

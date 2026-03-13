@@ -5,6 +5,11 @@ import pool from './db.js';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import validator from 'validator';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const httpServer = createServer(app);
@@ -18,8 +23,8 @@ const io = new Server(httpServer, {
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from public directory
-app.use(express.static('public'));
+// Serve static files from public directory using absolute path
+app.use(express.static(path.join(__dirname, 'public')));
 
 // --- WEBSOCKETS ---
 io.on('connection', (socket) => {
@@ -110,14 +115,24 @@ app.get('/api/picnics/:id', async (req, res) => {
         // Get participants
         const [participants] = await pool.query('SELECT * FROM participants WHERE picnic_id = ?', [picnicId]);
 
-        // Get potluck items
-        const [potluckItems] = await pool.query(`
-            SELECT p.id, p.name, p.status, p.added_by, p.claimed_by,
-                   u.name as claimer_name 
-            FROM potluck_items p
-            LEFT JOIN participants u ON p.claimed_by = u.id
-            WHERE p.picnic_id = ?
+        // Get potluck items and their claims
+        const [potluckItemsRows] = await pool.query(`
+            SELECT id, name, quantity, status, added_by
+            FROM potluck_items
+            WHERE picnic_id = ?
         `, [picnicId]);
+
+        const itemIds = potluckItemsRows.map(item => item.id);
+        let claims = [];
+        if (itemIds.length > 0) {
+            const [claimRows] = await pool.query(`
+                SELECT c.item_id, c.participant_id, c.quantity, u.name as participant_name
+                FROM potluck_claims c
+                JOIN participants u ON c.participant_id = u.id
+                WHERE c.item_id IN (?)
+            `, [itemIds]);
+            claims = claimRows;
+        }
 
         // Get proposed dates and votes
         const [dates] = await pool.query('SELECT * FROM picnic_dates WHERE picnic_id = ?', [picnicId]);
@@ -150,12 +165,17 @@ app.get('/api/picnics/:id', async (req, res) => {
             ...picnic,
             participants,
             dates: datesWithVotes,
-            potluckItems: potluckItems.map(item => ({
+            potluckItems: potluckItemsRows.map(item => ({
                 id: item.id,
                 name: item.name,
+                quantity: item.quantity,
                 status: item.status,
                 addedBy: item.added_by,
-                claimedBy: item.claimed_by ? { id: item.claimed_by, name: item.claimer_name } : null
+                claims: claims.filter(c => c.item_id === item.id).map(c => ({
+                    participantId: c.participant_id,
+                    participantName: c.participant_name,
+                    quantity: c.quantity
+                }))
             }))
         });
     } catch (error) {
@@ -189,19 +209,20 @@ app.post('/api/picnics/:id/participants', async (req, res) => {
 // Add a potluck item
 app.post('/api/picnics/:id/potluck', async (req, res) => {
     const picnicId = req.params.id;
-    const { name, addedBy } = req.body; // addedBy is a string name or ID
+    const { name, addedBy, quantity } = req.body; // addedBy is a string name or ID
 
     if (!name) return res.status(400).json({ error: 'Item name is required' });
 
     try {
         const safeName = validator.escape(name);
         const safeAddedBy = addedBy ? validator.escape(String(addedBy)) : 'Anonymous';
+        const itemQuantity = parseInt(quantity) || 1;
         const [result] = await pool.query(
-            `INSERT INTO potluck_items (picnic_id, name, status, added_by) VALUES (?, ?, 'needed', ?)`,
-            [picnicId, safeName, safeAddedBy]
+            `INSERT INTO potluck_items (picnic_id, name, status, added_by, quantity) VALUES (?, ?, 'needed', ?, ?)`,
+            [picnicId, safeName, safeAddedBy, itemQuantity]
         );
         notifyPicnicUpdated(picnicId);
-        res.status(201).json({ id: result.insertId, name: safeName, status: 'needed', addedBy: safeAddedBy, claimedBy: null });
+        res.status(201).json({ id: result.insertId, name: safeName, status: 'needed', addedBy: safeAddedBy, quantity: itemQuantity, claims: [] });
     } catch (error) {
         console.error('Error adding potluck item:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -209,21 +230,59 @@ app.post('/api/picnics/:id/potluck', async (req, res) => {
 });
 
 // Claim a potluck item
-app.put('/api/picnics/:id/potluck/:itemId/claim', async (req, res) => {
+app.post('/api/picnics/:id/potluck/:itemId/claim', async (req, res) => {
     const { id: picnicId, itemId } = req.params;
-    const { participantId } = req.body;
+    const { participantId, quantity } = req.body;
 
     if (!participantId) return res.status(400).json({ error: 'Participant ID is required' });
 
     try {
+        const claimQuantity = parseInt(quantity) || 1;
+        
         await pool.query(
-            `UPDATE potluck_items SET status = 'covered', claimed_by = ? WHERE id = ? AND picnic_id = ?`,
-            [participantId, itemId, picnicId]
+            `INSERT INTO potluck_claims (item_id, participant_id, quantity) VALUES (?, ?, ?)`,
+            [itemId, participantId, claimQuantity]
         );
+
+        const [itemTotalRows] = await pool.query(
+            `SELECT quantity FROM potluck_items WHERE id = ? AND picnic_id = ?`,
+            [itemId, picnicId]
+        );
+        
+        if (itemTotalRows.length > 0) {
+            const requiredQuantity = itemTotalRows[0].quantity;
+            const [claimsTotalRows] = await pool.query(
+                `SELECT SUM(quantity) as total_claimed FROM potluck_claims WHERE item_id = ?`,
+                [itemId]
+            );
+            const totalClaimed = claimsTotalRows[0].total_claimed || 0;
+            
+            if (totalClaimed >= requiredQuantity) {
+                await pool.query(`UPDATE potluck_items SET status = 'covered' WHERE id = ?`, [itemId]);
+            }
+        }
+
         notifyPicnicUpdated(picnicId);
         res.json({ message: 'Item claimed successfully' });
     } catch (error) {
         console.error('Error claiming item:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Delete a potluck item
+app.delete('/api/picnics/:id/potluck/:itemId', async (req, res) => {
+    const { id: picnicId, itemId } = req.params;
+
+    try {
+        await pool.query(
+            `DELETE FROM potluck_items WHERE id = ? AND picnic_id = ?`,
+            [itemId, picnicId]
+        );
+        notifyPicnicUpdated(picnicId);
+        res.json({ message: 'Item deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting item:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
