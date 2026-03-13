@@ -1,11 +1,13 @@
 {
   "name": "picnic",
+  "type": "module",
   "version": "1.0.0",
   "description": "Picnic Finder App",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "init-db": "node scripts/init-db.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
