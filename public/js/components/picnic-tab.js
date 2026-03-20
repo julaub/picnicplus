@@ -8,35 +8,69 @@ const reverseGeocode = async (lat, lon) => {
     const key = `${lat},${lon}`;
     if (locationCache[key]) return locationCache[key];
 
-    try {
-        // Use zoom=18 to get POI/building-level detail (shelters, parks, etc.)
-        const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=18&addressdetails=1`,
-            { headers: { 'Accept-Language': navigator.language || 'en' } }
-        );
-        if (!res.ok) return null;
-        const data = await res.json();
+    const headers = { 'Accept-Language': navigator.language || 'en' };
 
+    // Helper: extract a display name from a Nominatim response
+    const buildDisplayName = (data) => {
         const addr = data.address || {};
-        const parts = [];
+        
+        // 1. Find the most specific place name
+        let placeName = '';
+        if (data.name) {
+            placeName = data.name;
+        } else {
+            // Fall back to address object keys in order of specificity
+            placeName = addr.leisure || addr.park || addr.tourism || addr.amenity || addr.building || addr.road || addr.pedestrian || addr.path || '';
+        }
 
-        // 1. Prefer the top-level name from Nominatim (actual POI/feature name)
-        //    e.g. "Refuge de Ropraz" for a shelter, park name, etc.
-        const poiName = (data.addresstype !== 'road' && data.name) ? data.name : '';
+        // 2. Find the city/town/village
+        let cityName = addr.city || addr.town || addr.village || addr.municipality || addr.hamlet || '';
 
-        // 2. If no POI name, fall back to address-based place name
-        const placeName = poiName || addr.leisure || addr.park || addr.amenity || addr.tourism || '';
-        if (placeName) parts.push(placeName);
+        // 3. Format as "Place / City" or just the part we found
+        if (placeName && cityName && placeName.toLowerCase() !== cityName.toLowerCase()) {
+            return `${placeName} / ${cityName}`;
+        } else if (placeName) {
+            return placeName;
+        } else if (cityName) {
+            return cityName;
+        }
+        
+        return null; // Fallback
+    };
 
-        // 3. Add area context (village/suburb/neighbourhood)
-        const area = addr.suburb || addr.neighbourhood || addr.village || addr.town || '';
-        if (area && area !== placeName) parts.push(area);
+    try {
+        // First pass: zoom=18 for POI/building-level detail (shelters, named buildings, etc.)
+        const res18 = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=18&addressdetails=1`,
+            { headers }
+        );
+        if (!res18.ok) return null;
+        const data18 = await res18.json();
 
-        // 4. Add city/county if different from area
-        const city = addr.city || addr.municipality || addr.county || '';
-        if (city && city !== area) parts.push(city);
+        // If we found a named POI, use it directly
+        if (data18.name && data18.addresstype !== 'road') {
+            const displayName = buildDisplayName(data18);
+            locationCache[key] = displayName;
+            return displayName;
+        }
 
-        const displayName = parts.length > 0 ? parts.join(', ') : (data.display_name || null);
+        // Second pass: zoom=14 for broader area features (beaches, parks, large leisure areas)
+        const res14 = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=14&addressdetails=1`,
+            { headers }
+        );
+        if (res14.ok) {
+            const data14 = await res14.json();
+            // Check if this broader zoom found a named feature
+            if (data14.name && data14.addresstype !== 'road') {
+                const displayName = buildDisplayName(data14);
+                locationCache[key] = displayName;
+                return displayName;
+            }
+        }
+
+        // Fallback: use the zoom=18 address data (road + area, no county)
+        const displayName = buildDisplayName(data18) || data18.display_name || null;
         locationCache[key] = displayName;
         return displayName;
     } catch (err) {
