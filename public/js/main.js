@@ -135,7 +135,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     elements.mobileToggle.addEventListener('click', toggleSidebar);
     elements.mobileOpen.addEventListener('click', toggleSidebar);
-    map.on('click', () => elements.sidebar.classList.remove('open')); // Close on map click on mobile
+    map.on('click', (e) => {
+        elements.sidebar.classList.remove('open'); // Close on map click on mobile
+        
+        // Show "Create Picnic" popup if we are not currently viewing a specific picnic
+        if (!state.picnicId) {
+            const popupContent = `
+                <div class="popup-inner">
+                    <h4 style="margin: 0 0 5px 0;">Create a Picnic Here?</h4>
+                    <p style="color:var(--text-muted); font-size:12px; margin-bottom: 8px;">
+                        Custom Location
+                    </p>
+                    <button class="btn-primary" style="padding: 8px 12px; font-size: 13px;"
+                        onclick="window.createPicnicPrompt(${e.latlng.lat}, ${e.latlng.lng})">
+                        Create Picnic Here
+                    </button>
+                </div>
+            `;
+            
+            L.popup()
+                .setLatLng(e.latlng)
+                .setContent(popupContent)
+                .openOn(map);
+        }
+    });
 
     // Feature selection exposing to global for the popup button
     window.createPicnicPrompt = async (lat, lon) => {
