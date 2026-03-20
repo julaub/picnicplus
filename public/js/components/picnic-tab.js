@@ -47,11 +47,12 @@ const reverseGeocode = async (lat, lon) => {
         if (!res18.ok) return null;
         const data18 = await res18.json();
 
-        // If we found a named POI, use it directly
-        if (data18.name && data18.addresstype !== 'road') {
-            const displayName = buildDisplayName(data18);
-            locationCache[key] = displayName;
-            return displayName;
+        const name18 = buildDisplayName(data18);
+
+        // If we found a named POI and it's not a road, use it directly
+        if (data18.name && data18.addresstype !== 'road' && name18) {
+            locationCache[key] = name18;
+            return name18;
         }
 
         // Second pass: zoom=14 for broader area features (beaches, parks, large leisure areas)
@@ -61,16 +62,17 @@ const reverseGeocode = async (lat, lon) => {
         );
         if (res14.ok) {
             const data14 = await res14.json();
-            // Check if this broader zoom found a named feature
-            if (data14.name && data14.addresstype !== 'road') {
-                const displayName = buildDisplayName(data14);
-                locationCache[key] = displayName;
-                return displayName;
+            const name14 = buildDisplayName(data14);
+            // Accept zoom 14 if it gives a specific place (not just a city/village)
+            // A quick tell is if name14 contains our " / " separator, meaning place != city
+            if (name14 && name14.includes(' / ')) {
+                locationCache[key] = name14;
+                return name14;
             }
         }
 
         // Fallback: use the zoom=18 address data (road + area, no county)
-        const displayName = buildDisplayName(data18) || data18.display_name || null;
+        const displayName = name18 || data18.display_name || null;
         locationCache[key] = displayName;
         return displayName;
     } catch (err) {
