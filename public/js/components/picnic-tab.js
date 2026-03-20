@@ -165,6 +165,16 @@ export const initPicnicTab = (containerId) => {
         proposeBtn.id = 'propose-date-btn';
         proposeBtn.style.cssText = 'font-size: 0.8rem; padding: 4px 8px;';
         proposeBtn.textContent = 'Propose New Date';
+
+        // Attach propose handler directly to the element
+        proposeBtn.addEventListener('click', async () => {
+            const dateResult = await requestDateAndTime();
+            if (!dateResult) return;
+            
+            proposeBtn.textContent = 'Proposing...';
+            await proposeDateApi(dateResult.dateText, dateResult.timeText);
+        });
+
         dateH3.appendChild(proposeBtn);
         dateSection.appendChild(dateH3);
 
@@ -205,6 +215,13 @@ export const initPicnicTab = (containerId) => {
                 btnVote.style.cssText = 'padding: 6px 12px; border-radius: 20px; flex-shrink: 0; margin-left: 10px;';
                 btnVote.textContent = myVote ? '👍 Voted' : 'Vote';
 
+                // Attach vote handler directly to the element
+                btnVote.addEventListener('click', async () => {
+                    btnVote.textContent = 'Voting...';
+                    btnVote.disabled = true;
+                    await toggleVoteApi(date.id);
+                });
+
                 li.appendChild(divLeft);
                 li.appendChild(btnVote);
                 dateUl.appendChild(li);
@@ -235,9 +252,14 @@ export const initPicnicTab = (containerId) => {
         } else {
             state.potluckItems.forEach(item => {
                 const isCovered = item.status === 'covered';
-                const claimerName = isCovered
-                    ? (state.currentUser && item.claimedBy.id === state.currentUser.id ? 'You' : item.claimedBy.name)
-                    : 'Needed';
+                // Use item.claims array (from the API) instead of the non-existent item.claimedBy
+                let claimerName = 'Needed';
+                if (isCovered && item.claims && item.claims.length > 0) {
+                    const claimerNames = item.claims.map(c =>
+                        (state.currentUser && c.participantId === state.currentUser.id) ? 'You' : c.participantName
+                    );
+                    claimerName = claimerNames.join(', ');
+                }
                 
                 const li = document.createElement('li');
                 li.className = 'potluck-item mini-item flex-between';
@@ -268,28 +290,6 @@ export const initPicnicTab = (containerId) => {
         potluckSection.appendChild(manageBtn);
 
         container.appendChild(potluckSection);
-
-        // Propose date handler
-        const proposeBtnEl = document.getElementById('propose-date-btn');
-        if (proposeBtnEl) {
-            proposeBtnEl.addEventListener('click', async () => {
-                const dateResult = await requestDateAndTime();
-                if (!dateResult) return;
-                
-                proposeBtnEl.textContent = 'Proposing...';
-                await proposeDateApi(dateResult.dateText, dateResult.timeText);
-            });
-        }
-
-        // Vote handlers
-        document.querySelectorAll('.btn-vote').forEach(btn => {
-            btn.addEventListener('click', async (e) => {
-                const dateId = e.target.getAttribute('data-date-id');
-                e.target.textContent = 'Voting...';
-                e.target.disabled = true;
-                await toggleVoteApi(dateId);
-            });
-        });
 
         // Add copy handler
         const copyBtn = document.getElementById('copy-share-btn');
