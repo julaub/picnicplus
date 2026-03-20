@@ -9,21 +9,30 @@ const reverseGeocode = async (lat, lon) => {
     if (locationCache[key]) return locationCache[key];
 
     try {
+        // Use zoom=18 to get POI/building-level detail (shelters, parks, etc.)
         const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=16&addressdetails=1`,
+            `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&zoom=18&addressdetails=1`,
             { headers: { 'Accept-Language': navigator.language || 'en' } }
         );
         if (!res.ok) return null;
         const data = await res.json();
 
-        // Build a concise display name from address parts
         const addr = data.address || {};
         const parts = [];
-        // Prefer: park/leisure name > neighbourhood > suburb > city
-        const placeName = addr.leisure || addr.park || addr.amenity || addr.tourism || '';
+
+        // 1. Prefer the top-level name from Nominatim (actual POI/feature name)
+        //    e.g. "Refuge de Ropraz" for a shelter, park name, etc.
+        const poiName = (data.addresstype !== 'road' && data.name) ? data.name : '';
+
+        // 2. If no POI name, fall back to address-based place name
+        const placeName = poiName || addr.leisure || addr.park || addr.amenity || addr.tourism || '';
         if (placeName) parts.push(placeName);
+
+        // 3. Add area context (village/suburb/neighbourhood)
         const area = addr.suburb || addr.neighbourhood || addr.village || addr.town || '';
         if (area && area !== placeName) parts.push(area);
+
+        // 4. Add city/county if different from area
         const city = addr.city || addr.municipality || addr.county || '';
         if (city && city !== area) parts.push(city);
 
