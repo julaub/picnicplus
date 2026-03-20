@@ -126,16 +126,49 @@ export const initPicnicTab = (containerId) => {
         const locCard = document.createElement('div');
         locCard.className = 'dashboard-card full-width';
         locCard.onclick = () => document.querySelector('.nav-btn[data-target="view-map"]').click();
+        
+        const { lat, lon } = state.picnicDetails;
+        const latDisplay = parseFloat(lat).toFixed(5);
+        const lonDisplay = parseFloat(lon).toFixed(5);
+        const coordsText = `${latDisplay}, ${lonDisplay}`;
+
         locCard.innerHTML = `
             <div class="card-icon">📍</div>
             <div class="card-title">Location</div>
             <div class="card-value" id="location-name">Loading location...</div>
             <div class="card-subtext">Tap to see the exact spot</div>
+            <div style="margin-top: 10px; font-size: 0.85rem; color: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.2); padding: 6px 10px; border-radius: 6px;">
+                <span id="coords-text-display">${coordsText}</span>
+                <button id="copy-coords-btn" class="btn-secondary btn-sm" style="padding: 4px 8px; font-size: 0.75rem;">Copy</button>
+            </div>
+            <input type="text" id="hidden-coords-input" value="${coordsText}" style="position: absolute; left: -9999px;">
         `;
         gridDiv.appendChild(locCard);
 
+        const copyCoordsBtn = locCard.querySelector('#copy-coords-btn');
+        if (copyCoordsBtn) {
+            copyCoordsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const input = locCard.querySelector('#hidden-coords-input');
+                input.select();
+                try {
+                    document.execCommand('copy');
+                    const origText = copyCoordsBtn.textContent;
+                    copyCoordsBtn.textContent = 'Copied!';
+                    copyCoordsBtn.style.background = 'var(--success-color, #10b981)';
+                    copyCoordsBtn.style.color = '#fff';
+                    setTimeout(() => {
+                        copyCoordsBtn.textContent = origText;
+                        copyCoordsBtn.style.background = '';
+                        copyCoordsBtn.style.color = '';
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy', err);
+                }
+            });
+        }
+
         // Resolve location name asynchronously
-        const { lat, lon } = state.picnicDetails;
         reverseGeocode(lat, lon).then(name => {
             const el = document.getElementById('location-name');
             if (el) el.textContent = name || 'View on Map';
