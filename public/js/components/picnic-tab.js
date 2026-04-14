@@ -1,5 +1,7 @@
 import { state, proposeDateApi, toggleVoteApi } from '../state.js';
 import { requestDateAndTime } from './date-picker.js';
+import { generateQRCodeUrl } from '../utils/qr.js';
+import { downloadICS } from '../utils/ics.js';
 
 // Cache for reverse geocoding results to avoid redundant API calls
 const locationCache = {};
@@ -105,7 +107,25 @@ export const initPicnicTab = (containerId) => {
         navBtn.style.display = 'flex';
 
         // Update header
-        titleDisplay.textContent = state.picnicDetails.name || 'Your Picnic';
+        titleDisplay.textContent = state.picnicDetails.name || 'Your Event';
+
+        // Dynamic Gradient Hash based on event name
+        if (state.picnicDetails.name) {
+            let hash = 0;
+            for (let i = 0; i < state.picnicDetails.name.length; i++) {
+                hash = state.picnicDetails.name.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const gradients = [
+                'linear-gradient(135deg, rgba(255,107,107,0.3), rgba(255,142,83,0.1))',
+                'linear-gradient(135deg, rgba(78,101,255,0.3), rgba(146,239,253,0.1))',
+                'linear-gradient(135deg, rgba(17,153,142,0.3), rgba(56,239,125,0.1))'
+            ];
+            const selectedGradient = gradients[Math.abs(hash) % gradients.length];
+            const headerEl = document.querySelector('#view-picnic .view-header');
+            if(headerEl) {
+                headerEl.style.background = selectedGradient;
+            }
+        }
 
         // Calculate summary metrics
         const participantCount = state.participants ? state.participants.length : 0;
@@ -198,7 +218,7 @@ export const initPicnicTab = (containerId) => {
         potluckCard.onclick = () => document.querySelector('.nav-btn[data-target="view-potluck"]').click();
         potluckCard.innerHTML = `
             <div class="card-icon">🍔</div>
-            <div class="card-title">Potluck Status</div>
+            <div class="card-title">Items Status</div>
             <div class="card-value">${claimedCount} / ${potluckCount}</div>
             <div class="card-subtext">items claimed</div>
         `;
@@ -226,6 +246,13 @@ export const initPicnicTab = (containerId) => {
         shareBtn.textContent = 'Copy';
         shareInputGroup.appendChild(shareBtn);
         shareCard.appendChild(shareInputGroup);
+
+        // QR Code
+        const qrImg = document.createElement('img');
+        qrImg.src = generateQRCodeUrl(shareUrl);
+        qrImg.style.cssText = 'border-radius: 8px; margin-top: 12px; max-width: 150px; align-self: center; background: white; padding: 4px;';
+        shareCard.appendChild(qrImg);
+
         gridDiv.appendChild(shareCard);
 
         container.appendChild(gridDiv);
@@ -300,8 +327,24 @@ export const initPicnicTab = (containerId) => {
                     await toggleVoteApi(date.id);
                 });
 
+                const btnContainer = document.createElement('div');
+                btnContainer.style.cssText = 'display: flex; gap: 8px; align-items: center;';
+
+                const icsBtn = document.createElement('button');
+                icsBtn.className = 'btn-icon';
+                icsBtn.innerHTML = '📅';
+                icsBtn.title = 'Add to Calendar';
+                icsBtn.style.cssText = 'font-size: 1.2rem; background: transparent; border: none; cursor: pointer; padding: 4px; border-radius: 50%; display: flex; align-items: center; justify-content: center;';
+                icsBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    downloadICS(state.picnicDetails.name || 'Event', date.dateText, date.timeText);
+                };
+
+                btnContainer.appendChild(icsBtn);
+                btnContainer.appendChild(btnVote);
+
                 li.appendChild(divLeft);
-                li.appendChild(btnVote);
+                li.appendChild(btnContainer);
                 dateUl.appendChild(li);
             });
         }
@@ -315,7 +358,7 @@ export const initPicnicTab = (containerId) => {
         
         const potluckH3 = document.createElement('h3');
         potluckH3.style.cssText = 'margin-bottom: 1rem; color: var(--text-light); border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem;';
-        potluckH3.textContent = 'Potluck Items List';
+        potluckH3.textContent = 'Tasks & Items List';
         potluckSection.appendChild(potluckH3);
 
         const potluckUl = document.createElement('ul');
@@ -364,7 +407,7 @@ export const initPicnicTab = (containerId) => {
         manageBtn.className = 'btn-secondary full-width mt-4';
         manageBtn.style.cssText = 'margin-top: 1rem; width: 100%;';
         manageBtn.onclick = () => document.querySelector('.nav-btn[data-target="view-potluck"]').click();
-        manageBtn.textContent = 'Manage Potluck Items';
+        manageBtn.textContent = 'Manage Tasks & Items';
         potluckSection.appendChild(manageBtn);
 
         container.appendChild(potluckSection);
