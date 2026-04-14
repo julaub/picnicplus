@@ -154,18 +154,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Orchestration Logic ---
     const getSelectedAmenities = () => {
-        const selected = new Set();
+        const effective = new Set();
+        const checkedIds = [];
         document.querySelectorAll('.amenity-cb:checked').forEach(cb => {
             const id = cb.id.replace('-checkbox', '');
+            checkedIds.push(id);
             if (amenityDefinitions[id]) {
-                selected.add(id);
+                effective.add(id);
             } else if (amenityGroupDefinitions[id]) {
                 amenityGroupDefinitions[id].includes.forEach(inc => {
-                    if (amenityDefinitions[inc]) selected.add(inc);
+                    if (amenityDefinitions[inc]) effective.add(inc);
                 });
             }
         });
-        return Array.from(selected);
+        return { effectiveAmenities: Array.from(effective), checkedIds };
     };
 
     elements.findButton.addEventListener('click', async () => {
@@ -176,7 +178,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             elements.sidebar.classList.remove('open');
         }
 
-        const effectiveAmenities = getSelectedAmenities();
+        const { effectiveAmenities, checkedIds } = getSelectedAmenities();
         if (effectiveAmenities.length === 0) {
             updateStatus("Please select at least one amenity.", "error");
             return;
@@ -207,17 +209,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Require all selected groups
             let finalClusters = clusters;
             if (elements.requireAllCheckbox.checked) {
-                // Get the exact IDs configured in UI (groups and singles)
-                const requiredGroupsOrSingles = Array.from(document.querySelectorAll('.amenity-cb:checked')).map(cb => cb.id.replace('-checkbox', ''));
+                // Pre-calculate requirements to avoid redundant lookups in the filter loop
+                const requirements = checkedIds.map(reqId => {
+                    if (amenityDefinitions[reqId]) {
+                        return [reqId];
+                    } else if (amenityGroupDefinitions[reqId]) {
+                        return amenityGroupDefinitions[reqId].includes;
+                    }
+                    return [];
+                });
 
                 finalClusters = clusters.filter(c => {
-                    return requiredGroupsOrSingles.every(reqId => {
-                        if (amenityDefinitions[reqId]) {
-                            return c.types.includes(reqId);
-                        } else if (amenityGroupDefinitions[reqId]) {
-                            return amenityGroupDefinitions[reqId].includes.some(inc => c.types.includes(inc));
-                        }
-                        return false;
+                    return requirements.every(reqTypes => {
+                        return reqTypes.some(type => c.types.includes(type));
                     });
                 });
             }
