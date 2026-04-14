@@ -4,12 +4,13 @@
 .dashboard-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 12px;
 }
 
 @media (min-width: 600px) {
     .dashboard-grid {
         grid-template-columns: 1fr 1fr;
+        gap: 16px;
     }
 
     .dashboard-grid .full-width {

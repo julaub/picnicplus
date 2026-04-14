@@ -142,13 +142,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!state.picnicId) {
             const popupContent = `
                 <div class="popup-inner">
-                    <h4 style="margin: 0 0 5px 0;">Create a Picnic Here?</h4>
+                    <h4 style="margin: 0 0 5px 0;">Create an Event Here?</h4>
                     <p style="color:var(--text-muted); font-size:12px; margin-bottom: 8px;">
                         Custom Location
                     </p>
                     <button class="btn-primary" style="padding: 8px 12px; font-size: 13px;"
                         onclick="window.createPicnicPrompt(${e.latlng.lat}, ${e.latlng.lng})">
-                        Create Picnic Here
+                        Create Event Here
                     </button>
                 </div>
             `;
@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Feature selection exposing to global for the popup button
     window.createPicnicPrompt = async (lat, lon) => {
         map.closePopup();
-        const picnicName = prompt("What are we celebrating? (e.g. Alex's Birthday)");
+        const picnicName = prompt("What is the event? (e.g. Alex's Birthday)");
         if (!picnicName) return;
         const organizerName = prompt("What is your name?");
         if (!organizerName) return;
@@ -172,9 +172,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!dateResult) return; // User cancelled
         const { dateText, timeText } = dateResult;
 
-        updateStatus(`Creating Picnic...`, 'loading');
+        updateStatus(`Creating Event...`, 'loading');
         await createPicnic(picnicName, lat, lon, organizerName, dateText, timeText);
-        updateStatus(`Picnic created! Share the URL with friends.`, 'success');
+        updateStatus(`Event created! Share the URL with friends.`, 'success');
 
         // Switch to Picnic tab to show creation success and the dashboard
         document.querySelector('.nav-btn[data-target="view-picnic"]').click();
@@ -277,13 +277,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const isPicnicActive = await checkUrlForPicnic();
 
     if (isPicnicActive) {
-        updateStatus(`Welcome to the picnic!`, 'success');
+        updateStatus(`Welcome to the event!`, 'success');
         elements.sidebar.classList.remove('open'); // Close sidebar on mobile
 
         // Show join dialog if not logged in
         if (!state.currentUser) {
             setTimeout(async () => {
-                const name = prompt("You've been invited to a picnic! What's your name?");
+                const name = prompt("You've been invited to an event! What's your name?");
                 if (name) {
                     await joinPicnic(name);
                 }

@@ -14,7 +14,7 @@ export const initPotluck = (containerId) => {
 
         // Needed
         const neededH3 = document.createElement('h3');
-        neededH3.textContent = 'Items Needed';
+        neededH3.textContent = 'Tasks & Items Needed';
         container.appendChild(neededH3);
         
         const neededUl = document.createElement('ul');
@@ -64,7 +64,7 @@ export const initPotluck = (containerId) => {
                 
                 if (!state.currentUser) {
                     btn.disabled = true;
-                    btn.title = 'Join picnic to claim';
+                    btn.title = 'Join event to claim';
                 }
                 
                 controlsDiv.appendChild(claimInput);
@@ -80,7 +80,7 @@ export const initPotluck = (containerId) => {
         // Covered
         const coveredH3 = document.createElement('h3');
         coveredH3.className = 'mt-4';
-        coveredH3.textContent = 'Covered Items';
+        coveredH3.textContent = 'Covered Tasks & Items';
         container.appendChild(coveredH3);
 
         const coveredUl = document.createElement('ul');
@@ -131,7 +131,7 @@ export const initPotluck = (containerId) => {
         addHtmlDiv.innerHTML = `
             <h3 style="margin-bottom: 8px;">Add New Item</h3>
             <div class="input-group">
-                <input type="text" id="new-item-input" placeholder="${state.currentUser ? 'Needs bringing...' : 'Join picnic to add items'}" ${!state.currentUser ? 'disabled' : ''} />
+                <input type="text" id="new-item-input" placeholder="${state.currentUser ? 'Needs bringing...' : 'Join event to add items'}" ${!state.currentUser ? 'disabled' : ''} />
                 <input type="number" id="new-item-qty" placeholder="Qty" value="1" min="1" style="width: 70px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 4px; padding: 2px 5px;" ${!state.currentUser ? 'disabled' : ''} />
                 <button class="btn-icon" id="add-item-btn" aria-label="Add" ${!state.currentUser ? 'disabled' : ''}>
                     <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -158,7 +158,7 @@ export const initPotluck = (containerId) => {
     
     const removeItem = async (itemId) => {
         if (!state.currentUser) return;
-        if (confirm("Are you sure you want to remove this potluck item?")) {
+        if (confirm("Are you sure you want to remove this item?")) {
             await removePotluckItemApi(itemId);
         }
     };

@@ -55,7 +55,7 @@ export const renderClusters = (clusters, radius, { map, highlightLayer, emojiMar
                     </p>
                     <button class="btn-primary" style="padding: 8px 12px; font-size: 13px;"
                         onclick="window.createPicnicPrompt(${item.lat}, ${item.lon})">
-                        Create Picnic Here
+                        Create Event Here
                     </button>
                 </div>
             `;
