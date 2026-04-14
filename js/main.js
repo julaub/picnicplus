@@ -191,7 +191,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             elements.findButton.disabled = true;
 
             const query = buildOverpassQuery(effectiveAmenities, bbox);
-            console.log("Query:\n", query);
             const data = await fetchAmenities(query);
 
             if (!data || !data.elements || data.elements.length === 0) {
