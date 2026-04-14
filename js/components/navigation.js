@@ -33,7 +33,10 @@ export const initializeNavigation = () => {
 
             // Trigger map resize event if map view activated to fix Leaflet rendering issues
             if (targetId === 'view-map' && window.mapObj) {
-                setTimeout(() => window.mapObj.invalidateSize(), 100);
+                // Immediate call
+                window.mapObj.invalidateSize();
+                // Delayed call to ensure the map renders correctly after the CSS transition finishes
+                setTimeout(() => window.mapObj.invalidateSize(), 500);
             }
         });
     });
