@@ -4,7 +4,9 @@ import { v4 as uuidv4 } from 'uuid';
 import pool from './db.js';
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: process.env.ALLOWED_ORIGIN || 'http://localhost:3000'
+}));
 app.use(express.json());
 
 // Serve static files from current directory
