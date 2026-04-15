@@ -132,9 +132,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     const toggleSidebar = () => {
         elements.sidebar.classList.toggle('open');
     };
+    const closeSidebar = () => {
+        if (window.innerWidth <= 768) {
+            elements.sidebar.classList.remove('open');
+        }
+    };
     elements.mobileToggle.addEventListener('click', toggleSidebar);
     elements.mobileOpen.addEventListener('click', toggleSidebar);
-    map.on('click', () => elements.sidebar.classList.remove('open')); // Close on map click on mobile
+    map.on('click', closeSidebar); // Close on map click on mobile
 
     // Feature selection exposing to global for the popup button
     window.createPicnicPrompt = async (lat, lon) => {
@@ -174,9 +179,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateStatus("Clearing map...", "loading");
 
         // Hide sidebar on mobile after clicking find
-        if (window.innerWidth <= 768) {
-            elements.sidebar.classList.remove('open');
-        }
+        closeSidebar();
 
         const { effectiveAmenities, checkedIds } = getSelectedAmenities();
         if (effectiveAmenities.length === 0) {
@@ -253,7 +256,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (isPicnicActive) {
         updateStatus(`Welcome to the picnic!`, 'success');
-        elements.sidebar.classList.remove('open'); // Close sidebar on mobile
+        closeSidebar(); // Close sidebar on mobile
 
         // Show join dialog if not logged in
         if (!state.currentUser) {
