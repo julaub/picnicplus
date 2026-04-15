@@ -109,7 +109,9 @@ export const addPotluckItemApi = async (name) => {
             body: JSON.stringify({ name, addedBy: state.currentUser.name })
         });
         if (!res.ok) throw new Error('Failed to add item');
-        await fetchPicnic(state.picnicId);
+        const newItem = await res.json();
+        state.potluckItems.push(newItem);
+        dispatchStateUpdate('potluckItems');
     } catch (err) {
         console.error(err);
         alert('Error adding item');
@@ -126,7 +128,17 @@ export const claimPotluckItemApi = async (itemId) => {
             body: JSON.stringify({ participantId: state.currentUser.id })
         });
         if (!res.ok) throw new Error('Failed to claim item');
-        await fetchPicnic(state.picnicId);
+
+        // Optimistically update the item in the local state
+        const itemIndex = state.potluckItems.findIndex(i => i.id == itemId);
+        if (itemIndex !== -1) {
+            state.potluckItems[itemIndex] = {
+                ...state.potluckItems[itemIndex],
+                status: 'covered',
+                claimedBy: { id: state.currentUser.id, name: state.currentUser.name }
+            };
+        }
+        dispatchStateUpdate('potluckItems');
     } catch (err) {
         console.error(err);
         alert('Error claiming item');
