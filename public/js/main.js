@@ -8,6 +8,8 @@ import { initParticipants } from './components/participants.js';
 import { initPotluck } from './components/potluck.js';
 import { initPicnicTab } from './components/picnic-tab.js';
 import { checkUrlForPicnic, createPicnic, joinPicnic, state } from './state.js';
+import { requestDateAndTime } from './components/date-picker.js';
+import { showPrompt, showAlert } from './components/modal.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // UI Elements
@@ -131,22 +133,94 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Mobile Sidebar Toggle
     const toggleSidebar = () => {
         elements.sidebar.classList.toggle('open');
+        elements.sidebar.style.transform = '';
     };
     elements.mobileToggle.addEventListener('click', toggleSidebar);
     elements.mobileOpen.addEventListener('click', toggleSidebar);
-    map.on('click', () => elements.sidebar.classList.remove('open')); // Close on map click on mobile
+    map.on('click', (e) => {
+        elements.sidebar.classList.remove('open'); // Close on map click on mobile
+        elements.sidebar.style.transform = '';
+
+        // Show "Create Picnic" popup if we are not currently viewing a specific picnic
+        if (!state.picnicId) {
+            const popupContent = `
+                <div class="popup-inner">
+                    <h4 style="margin: 0 0 5px 0;">Create a Picnic Here?</h4>
+                    <p style="color:var(--text-muted); font-size:12px; margin-bottom: 8px;">
+                        Custom Location
+                    </p>
+                    <button class="btn-primary" style="padding: 8px 12px; font-size: 13px;"
+                        onclick="window.createPicnicPrompt(${e.latlng.lat}, ${e.latlng.lng})">
+                        Create Picnic Here
+                    </button>
+                </div>
+            `;
+
+            L.popup()
+                .setLatLng(e.latlng)
+                .setContent(popupContent)
+                .openOn(map);
+        }
+    });
+
+    // Swipe down gesture to close sidebar on mobile
+    let touchStartY = 0;
+    let touchEndY = 0;
+
+    elements.sidebar.addEventListener('touchstart', e => {
+        if (window.innerWidth <= 768 && elements.sidebar.scrollTop === 0) {
+            touchStartY = e.changedTouches[0].screenY;
+        }
+    }, { passive: true });
+
+    elements.sidebar.addEventListener('touchmove', e => {
+        if (window.innerWidth <= 768 && touchStartY > 0 && elements.sidebar.scrollTop === 0) {
+            const currentY = e.changedTouches[0].screenY;
+            const diffY = currentY - touchStartY;
+            if (diffY > 0) { // Dragging down
+                elements.sidebar.style.transform = `translateY(${diffY}px)`;
+                elements.sidebar.style.transition = 'none'; // Disable transition during drag
+            }
+        }
+    }, { passive: true });
+
+    elements.sidebar.addEventListener('touchend', e => {
+        if (window.innerWidth <= 768 && touchStartY > 0) {
+            touchEndY = e.changedTouches[0].screenY;
+            if (touchEndY - touchStartY > 100) {
+                // Swipe down threshold reached, close sidebar
+                elements.sidebar.classList.remove('open');
+            }
+            // Reset state
+            elements.sidebar.style.transform = '';
+            elements.sidebar.style.transition = ''; // Re-enable CSS transition
+            touchStartY = 0;
+        }
+    });
 
     // Feature selection exposing to global for the popup button
     window.createPicnicPrompt = async (lat, lon) => {
         map.closePopup();
-        const picnicName = prompt("What are we celebrating? (e.g. Alex's Birthday)");
+        const picnicName = await showPrompt("Create Picnic", "What are we celebrating?", "e.g. Alex's Birthday");
         if (!picnicName) return;
-        const organizerName = prompt("What is your name?");
+        const organizerName = await showPrompt("Your Info", "What is your name?", "Your Name");
         if (!organizerName) return;
 
+        const dateResult = await requestDateAndTime();
+        if (!dateResult) return; // User cancelled
+        const { dateText, timeText } = dateResult;
+
         updateStatus(`Creating Picnic...`, 'loading');
-        await createPicnic(picnicName, lat, lon, organizerName);
+        await createPicnic(picnicName, lat, lon, organizerName, dateText, timeText);
         updateStatus(`Picnic created! Share the URL with friends.`, 'success');
+
+        if (window.confetti) {
+            confetti({
+                particleCount: 150,
+                spread: 80,
+                origin: { y: 0.6 }
+            });
+        }
 
         // Switch to Picnic tab to show creation success and the dashboard
         document.querySelector('.nav-btn[data-target="view-picnic"]').click();
@@ -252,10 +326,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateStatus(`Welcome to the picnic!`, 'success');
         elements.sidebar.classList.remove('open'); // Close sidebar on mobile
 
+        if (window.confetti) {
+            setTimeout(() => {
+                confetti({
+                    particleCount: 100,
+                    spread: 60,
+                    origin: { y: 0.6 },
+                    colors: ['#00d2ff', '#3a86ff', '#ff007a']
+                });
+            }, 500);
+        }
+
         // Show join dialog if not logged in
         if (!state.currentUser) {
             setTimeout(async () => {
-                const name = prompt("You've been invited to a picnic! What's your name?");
+                const name = await showPrompt("Welcome!", "You've been invited to a picnic! What's your name?", "Your Name");
                 if (name) {
                     await joinPicnic(name);
                 }
