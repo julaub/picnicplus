@@ -104,17 +104,21 @@ export const initPicnicTab = (containerId) => {
             copyBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const input = document.getElementById('share-url-input');
-                input.select();
-                document.execCommand('copy');
 
-                const originalText = copyBtn.textContent;
-                copyBtn.textContent = 'Copied!';
-                copyBtn.style.background = 'var(--success-color, #10b981)';
+                navigator.clipboard.writeText(input.value)
+                    .then(() => {
+                        const originalText = copyBtn.textContent;
+                        copyBtn.textContent = 'Copied!';
+                        copyBtn.style.background = 'var(--success-color, #10b981)';
 
-                setTimeout(() => {
-                    copyBtn.textContent = originalText;
-                    copyBtn.style.background = '';
-                }, 2000);
+                        setTimeout(() => {
+                            copyBtn.textContent = originalText;
+                            copyBtn.style.background = '';
+                        }, 2000);
+                    })
+                    .catch(err => {
+                        console.error('Failed to copy text: ', err);
+                    });
             });
         }
     };
