@@ -598,7 +598,7 @@ details[open] summary {
 .mobile-open {
     display: none;
     position: absolute;
-    bottom: 24px;
+    bottom: calc(100px + env(safe-area-inset-bottom, 0px));
     left: 50%;
     transform: translateX(-50%);
     z-index: 999;
@@ -903,4 +903,25 @@ details[open] summary {
         opacity: 1;
         transform: scale(1);
     }
+}
+/* Pulse animation for user location marker */
+@keyframes location-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 15px rgba(0, 122, 255, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(0, 122, 255, 0);
+    }
+}
+
+.user-location-marker > div {
+    animation: location-pulse 2s infinite;
+}
+
+/* Locate Me Button Styling */
+.leaflet-control-locate a:hover {
+    background-color: #f4f4f4;
 }

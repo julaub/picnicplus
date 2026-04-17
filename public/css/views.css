@@ -74,7 +74,7 @@
    ========================================= */
 .bottom-nav {
     position: absolute;
-    bottom: 24px;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
     left: 50%;
     transform: translateX(-50%);
     z-index: 1000;
@@ -140,7 +140,7 @@
 
 /* Make sure mobile map button clears nav bar */
 .mobile-open {
-    bottom: 90px;
+    bottom: calc(100px + env(safe-area-inset-bottom, 0px));
 }
 
 /* =========================================

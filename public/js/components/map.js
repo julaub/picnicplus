@@ -10,10 +10,31 @@ export const initializeMap = (containerId) => {
         maxZoom: 19
     }).addTo(map);
 
+    // Add My Location control
+    const locateControl = L.control({ position: 'topright' });
+    locateControl.onAdd = function() {
+        const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-locate');
+        div.innerHTML = `<a href="#" id="map-locate-button" title="My Location" style="display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; background-color: #fff; color: #333; text-decoration: none;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+            </svg>
+        </a>`;
+        div.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            // We dispatch a custom event to decouple it from main.js if needed, or simply click the other button
+            const myLocBtn = document.getElementById('my-location-button');
+            if (myLocBtn) myLocBtn.click();
+        };
+        return div;
+    };
+    locateControl.addTo(map);
+
     const highlightLayer = L.layerGroup().addTo(map);
     const emojiMarkerLayer = L.layerGroup().addTo(map);
+    const userLocationLayer = L.layerGroup().addTo(map);
 
-    return { map, highlightLayer, emojiMarkerLayer };
+    return { map, highlightLayer, emojiMarkerLayer, userLocationLayer };
 };
 
 export const renderClusters = (clusters, radius, { map, highlightLayer, emojiMarkerLayer }) => {

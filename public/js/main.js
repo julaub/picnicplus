@@ -119,6 +119,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     elements.searchButton.addEventListener('click', () => searchLocation(elements.locationInput.value, map, updateStatus));
     elements.locationInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchLocation(elements.locationInput.value, map, updateStatus) });
 
+    let userLocationMarker = null;
+
     elements.myLocationButton.addEventListener('click', () => {
         if (!navigator.geolocation) {
             updateStatus('Geolocation is not supported by your browser.', 'error');
@@ -135,6 +137,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                     duration: 1.5
                 });
                 updateStatus('Found your location.', 'success');
+                elements.locationInput.value = "My Location";
+
+                if (userLocationMarker) {
+                    mapState.userLocationLayer.removeLayer(userLocationMarker);
+                }
+
+                // Create a blue pulsing dot for the user's location
+                const userMarkerHtml = `
+                    <div style="width: 14px; height: 14px; background-color: #007aff; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(0, 122, 255, 0.5);"></div>
+                `;
+                const userIcon = L.divIcon({
+                    html: userMarkerHtml,
+                    className: 'user-location-marker',
+                    iconSize: [18, 18],
+                    iconAnchor: [9, 9]
+                });
+
+                userLocationMarker = L.marker([lat, lon], { icon: userIcon }).addTo(mapState.userLocationLayer);
             },
             (error) => {
                 let errorMessage = 'Unable to retrieve your location.';
