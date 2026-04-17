@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const elements = {
         locationInput: document.getElementById('location-input'),
         searchButton: document.getElementById('search-button'),
+        myLocationButton: document.getElementById('my-location-button'),
         amenitySection: document.getElementById('amenity-section'),
         conditionType: document.getElementById('condition-type'),
         conditionDistance: document.getElementById('condition-distance'),
@@ -117,6 +118,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Event Listeners ---
     elements.searchButton.addEventListener('click', () => searchLocation(elements.locationInput.value, map, updateStatus));
     elements.locationInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchLocation(elements.locationInput.value, map, updateStatus) });
+
+    elements.myLocationButton.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+            updateStatus('Geolocation is not supported by your browser.', 'error');
+            return;
+        }
+
+        updateStatus('Finding your location...', 'loading');
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                map.setView([lat, lon], 14, {
+                    animate: true,
+                    duration: 1.5
+                });
+                updateStatus('Found your location.', 'success');
+            },
+            (error) => {
+                let errorMessage = 'Unable to retrieve your location.';
+                if (error.code === error.PERMISSION_DENIED) {
+                    errorMessage = 'Location access denied by user.';
+                }
+                updateStatus(errorMessage, 'error');
+                console.error('Geolocation error:', error);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+    });
 
     elements.distanceSlider.addEventListener('input', (e) => elements.distanceValue.textContent = e.target.value);
 
