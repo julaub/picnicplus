@@ -119,7 +119,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     elements.searchButton.addEventListener('click', () => searchLocation(elements.locationInput.value, map, updateStatus));
     elements.locationInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') searchLocation(elements.locationInput.value, map, updateStatus) });
 
-    elements.myLocationButton.addEventListener('click', () => {
+    const handleMyLocation = (e) => {
+        if (e) e.preventDefault();
+
         if (!navigator.geolocation) {
             updateStatus('Geolocation is not supported by your browser.', 'error');
             return;
@@ -134,6 +136,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                     animate: true,
                     duration: 1.5
                 });
+
+                // Add pulsating marker
+                mapState.userMarkerLayer.clearLayers();
+                const userIcon = L.divIcon({
+                    className: 'user-location-marker',
+                    iconSize: [16, 16]
+                });
+                L.marker([lat, lon], { icon: userIcon }).addTo(mapState.userMarkerLayer);
+
+                // Fill input with "My Location"
+                elements.locationInput.value = "My Location";
+
                 updateStatus('Found your location.', 'success');
             },
             (error) => {
@@ -150,7 +164,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 maximumAge: 0
             }
         );
-    });
+    };
+
+    elements.myLocationButton.addEventListener('click', handleMyLocation);
+
+    // Bind the new map button as well
+    const mapMyLocationBtn = document.getElementById('map-my-location-button');
+    if (mapMyLocationBtn) {
+        mapMyLocationBtn.addEventListener('click', handleMyLocation);
+    }
 
     elements.distanceSlider.addEventListener('input', (e) => elements.distanceValue.textContent = e.target.value);
 
