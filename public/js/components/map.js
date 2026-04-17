@@ -10,10 +10,32 @@ export const initializeMap = (containerId) => {
         maxZoom: 19
     }).addTo(map);
 
+    // Custom "My Location" Control
+    const LocateControl = L.Control.extend({
+        onAdd: function(map) {
+            const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-locate');
+            const button = L.DomUtil.create('a', '', container);
+            button.innerHTML = `
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+                </svg>
+            `;
+            button.href = '#';
+            button.title = 'My Location';
+            button.id = 'map-my-location-button';
+
+            L.DomEvent.disableClickPropagation(container);
+
+            return container;
+        }
+    });
+    new LocateControl({ position: 'topright' }).addTo(map);
+
     const highlightLayer = L.layerGroup().addTo(map);
     const emojiMarkerLayer = L.layerGroup().addTo(map);
+    const userMarkerLayer = L.layerGroup().addTo(map);
 
-    return { map, highlightLayer, emojiMarkerLayer };
+    return { map, highlightLayer, emojiMarkerLayer, userMarkerLayer };
 };
 
 export const renderClusters = (clusters, radius, { map, highlightLayer, emojiMarkerLayer }) => {
