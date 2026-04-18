@@ -19,11 +19,30 @@ export const buildOverpassQuery = (effectiveAmenities, bbox) => {
     return query;
 };
 
+const OVERPASS_MIRRORS = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+];
+
 export const fetchAmenities = async (query) => {
-    const encoded = encodeURIComponent(query);
-    const response = await fetch(`https://overpass-api.de/api/interpreter?data=${encoded}`);
-    if (!response.ok) throw new Error(`Overpass error: ${response.status}`);
-    return await response.json();
+    const body = `data=${encodeURIComponent(query)}`;
+    let lastError;
+    for (const url of OVERPASS_MIRRORS) {
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body,
+            });
+            if (response.ok) return await response.json();
+            lastError = new Error(`Overpass ${response.status} from ${new URL(url).host}`);
+            if (response.status !== 504 && response.status !== 502 && response.status !== 429) break;
+        } catch (err) {
+            lastError = err;
+        }
+    }
+    throw lastError || new Error('Overpass: all mirrors failed');
 };
 
 export const clusterAmenities = (elements, effectiveAmenities, radius) => {
