@@ -1,7 +1,7 @@
 // js/components/navigation.js
 
 export const initializeNavigation = () => {
-    const navButtons = document.querySelectorAll('.nav-btn');
+    const navButtons = document.querySelectorAll('.pp-nav-item');
     const appViews = document.querySelectorAll('.app-view');
 
     navButtons.forEach(btn => {

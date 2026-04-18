@@ -49,64 +49,94 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Bootstrapping UI ---
     const updateStatus = (text, type = 'neutral') => {
         elements.statusText.textContent = text;
-        elements.statusBox.className = `status-bar ${type}`;
+        elements.statusBox.className = `pp-info pp-info-${type}`;
         if (type === 'loading') elements.statusIcon.textContent = '⏳';
         else if (type === 'error') elements.statusIcon.textContent = '⚠️';
         else if (type === 'success') elements.statusIcon.textContent = '✅';
         else elements.statusIcon.textContent = 'ℹ️';
     };
 
+    const updateAmenityCount = () => {
+        const n = document.querySelectorAll('.amenity-cb:checked').length;
+        const el = document.getElementById('amenity-count');
+        if (el) el.textContent = `${n} selected`;
+    };
+
     const buildAmenitiesUI = () => {
-        let html = '';
+        const items = [];
         uiSections.forEach(section => {
-            html += `
-                <details class="filter-group" open>
-                    <summary><h4>${section.title}</h4></summary>
-                    <div class="group-content">
-            `;
             section.items.forEach(item => {
                 if (item.type === 'group') {
-                    const group = amenityGroupDefinitions[item.id];
-                    if (!group) return;
-                    html += `
-                        <label class="custom-checkbox modern-toggle" title="${group.subtext || ''}">
-                            <input type="checkbox" class="amenity-cb" id="${item.id}-checkbox" checked>
-                            <span class="checkmark"></span>
-                            <div>
-                                <span class="label-text"><strong>${group.title}</strong></span>
-                                <span class="amenity-details">${group.subtext || ''}</span>
-                            </div>
-                        </label>
-                    `;
-                } else if (item.type === 'single') {
-                    const am = amenityDefinitions[item.id];
-                    if (!am) return;
-                    html += `
-                        <label class="custom-checkbox modern-toggle">
-                            <input type="checkbox" class="amenity-cb" id="${item.id}-checkbox">
-                            <span class="checkmark" style="border-color:${am.color}66"></span>
-                            <span class="label-text"><span class="amenity-emoji">${am.emoji}</span> ${am.title}</span>
-                        </label>
-                    `;
+                    const g = amenityGroupDefinitions[item.id];
+                    if (!g) return;
+                    const firstEmoji = amenityDefinitions[g.includes[0]]?.emoji || '📍';
+                    items.push({ id: item.id, title: g.title.replace(/ \(Any\)$/, ''), emoji: firstEmoji, defaultOn: ['fire_place_group','water_source_group'].includes(item.id) });
+                } else {
+                    const a = amenityDefinitions[item.id];
+                    if (!a) return;
+                    items.push({ id: item.id, title: a.title, emoji: a.emoji, defaultOn: false });
                 }
             });
-            html += `</div></details>`;
         });
-        elements.amenitySection.innerHTML = html;
+
+        elements.amenitySection.innerHTML = items.map(it => `
+            <button type="button" class="pp-amenity-card${it.defaultOn ? ' on' : ''}" data-id="${it.id}">
+                <input type="checkbox" class="amenity-cb" id="${it.id}-checkbox"${it.defaultOn ? ' checked' : ''} style="display:none;">
+                <div class="pp-amenity-icon">${it.emoji}</div>
+                <div class="pp-amenity-label">${it.title}</div>
+                <div class="pp-amenity-check">
+                    <svg viewBox="0 0 24 24" width="11" height="11" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </div>
+            </button>
+        `).join('');
+
+        elements.amenitySection.querySelectorAll('.pp-amenity-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const cb = card.querySelector('.amenity-cb');
+                cb.checked = !cb.checked;
+                card.classList.toggle('on', cb.checked);
+                updateAmenityCount();
+            });
+        });
+
+        updateAmenityCount();
     };
+
+    const PROX_EMOJI = { bus_stop: '🚌', supermarket: '🛒', convenience: '🏪', parking: '🅿️' };
 
     const renderAddedConditions = () => {
         elements.addedConditionsList.innerHTML = '';
         addedConditions.forEach((cond, index) => {
             const def = conditionDefinitions[cond.type];
             const div = document.createElement('div');
-            div.className = 'added-condition';
+            div.className = 'pp-filter';
+            div.style.marginBottom = '8px';
             div.innerHTML = `
-                <span><strong>${def.title}</strong> < ${cond.distance}m</span>
-                <button type="button" aria-label="Remove" data-index="${index}">&times;</button>
+                <div class="pp-filter-icon">${PROX_EMOJI[cond.type] || '📍'}</div>
+                <div class="pp-filter-body">
+                    <div class="pp-filter-name">${def.title}</div>
+                    <div class="pp-filter-meta">
+                        <div class="pp-stepper">
+                            <button type="button" data-act="dec">−</button>
+                            <span class="val">&lt; ${cond.distance}m</span>
+                            <button type="button" data-act="inc">+</button>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="pp-remove" aria-label="Remove">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                </button>
             `;
-            div.querySelector('button').addEventListener('click', (e) => {
-                addedConditions.splice(parseInt(e.target.dataset.index), 1);
+            div.querySelector('[data-act="dec"]').addEventListener('click', () => {
+                addedConditions[index].distance = Math.max(50, cond.distance - 50);
+                renderAddedConditions();
+            });
+            div.querySelector('[data-act="inc"]').addEventListener('click', () => {
+                addedConditions[index].distance = Math.min(2000, cond.distance + 50);
+                renderAddedConditions();
+            });
+            div.querySelector('.pp-remove').addEventListener('click', () => {
+                addedConditions.splice(index, 1);
                 renderAddedConditions();
             });
             elements.addedConditionsList.appendChild(div);
@@ -177,20 +207,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     elements.distanceSlider.addEventListener('input', (e) => elements.distanceValue.textContent = e.target.value);
 
     elements.addConditionBtn.addEventListener('click', () => {
-        const type = elements.conditionType.value;
-        const distance = parseInt(elements.conditionDistance.value, 10);
-        if (type && distance > 0) {
-            addedConditions.push({ type, distance });
-            renderAddedConditions();
-        }
+        const allTypes = ['bus_stop', 'supermarket', 'convenience', 'parking'];
+        const used = new Set(addedConditions.map(c => c.type));
+        const next = allTypes.find(t => !used.has(t));
+        if (!next) return;
+        addedConditions.push({ type: next, distance: 200 });
+        renderAddedConditions();
+    });
+
+    // Toggle row for require-all
+    const toggleRow = document.getElementById('require-all-toggle-row');
+    const toggleEl = document.getElementById('require-all-toggle');
+    toggleRow?.addEventListener('click', () => {
+        const cb = elements.requireAllCheckbox;
+        cb.checked = !cb.checked;
+        toggleEl.classList.toggle('on', cb.checked);
     });
 
     // Mobile Sidebar Toggle
     const toggleSidebar = () => {
         elements.sidebar.classList.toggle('open');
     };
-    elements.mobileToggle.addEventListener('click', toggleSidebar);
-    elements.mobileOpen.addEventListener('click', toggleSidebar);
+    elements.mobileToggle?.addEventListener('click', toggleSidebar);
+    elements.mobileOpen?.addEventListener('click', toggleSidebar);
     map.on('click', (e) => {
         elements.sidebar.classList.remove('open'); // Close on map click on mobile
         
@@ -233,7 +272,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateStatus(`Event created! Share the URL with friends.`, 'success');
 
         // Switch to Picnic tab to show creation success and the dashboard
-        document.querySelector('.nav-btn[data-target="view-picnic"]').click();
+        document.querySelector('.pp-nav-item[data-target="view-picnic"]').click();
     };
 
     // --- Orchestration Logic ---
@@ -354,7 +393,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // Switch to the picnic tab when joining via URL
         setTimeout(() => {
-            const picnicBtn = document.querySelector('.nav-btn[data-target="view-picnic"]');
+            const picnicBtn = document.querySelector('.pp-nav-item[data-target="view-picnic"]');
             if (picnicBtn) {
                 picnicBtn.style.display = 'flex'; // Ensure it's visible before clicking
                 picnicBtn.click();
