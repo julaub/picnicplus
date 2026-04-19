@@ -178,7 +178,8 @@ input, textarea { font-family: inherit; }
     position: absolute;
     top: 20px; left: 20px;
     width: var(--sidebar-width);
-    height: calc(100vh - 40px);
+    /* Leave room for the floating bottom nav (height ~68px + 14px gap + breathing) */
+    bottom: 100px;
     z-index: 1000;
     border-radius: var(--radius-lg);
     display: flex;
@@ -1325,7 +1326,8 @@ details[open] summary { border-bottom: 1px solid rgba(20,22,19,0.06); color: var
 
 /* ─── Bottom nav (pp-nav) ─── */
 .pp-nav {
-    position: absolute; left: 10px; right: 10px; bottom: 14px;
+    position: fixed; left: 10px; right: 10px;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
     height: 68px; z-index: 30;
     border-radius: 24px;
     background: rgba(255,255,255,0.82);
@@ -1470,15 +1472,19 @@ details[open] summary { border-bottom: 1px solid rgba(20,22,19,0.06); color: var
 .pp-info-success  { background: var(--green-50); color: var(--green-800); }
 .pp-info-loading  { background: rgba(14,122,77,0.06); color: var(--green-800); }
 
-/* CTA bar inside sidebar */
+/* CTA bar inside sidebar (desktop: sidebar already stops above nav, anchor at 0) */
 .pp-side-panel .pp-cta-bar {
     position: absolute; left: 0; right: 0; bottom: 0;
-    padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+    padding: 14px 16px;
     background: linear-gradient(to top, var(--bg) 65%, rgba(247,244,238,0));
 }
 
+/* Mobile: sidebar fills bottom-of-viewport, lift CTA above floating nav */
 @media (max-width: 768px) {
     .pp-side-panel .pp-cta-bar {
-        bottom: 92px;
+        bottom: calc(82px + env(safe-area-inset-bottom, 0px));
+    }
+    .pp-side-scroll {
+        padding-bottom: 180px !important;
     }
 }
