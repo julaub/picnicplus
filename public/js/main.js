@@ -224,11 +224,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         toggleEl.classList.toggle('on', cb.checked);
     });
 
-    // Mobile Sidebar Toggle
-    const toggleSidebar = () => {
-        elements.sidebar.classList.toggle('open');
+    // Sidebar visibility helpers — works on both mobile and desktop.
+    // Mobile: visible iff .open. Desktop: visible by default, hidden iff .closed.
+    const isMobileViewport = () => window.matchMedia('(max-width: 768px)').matches;
+    const isSidebarOpen = () => isMobileViewport()
+        ? elements.sidebar.classList.contains('open')
+        : !elements.sidebar.classList.contains('closed');
+    const openSidebar = () => {
+        elements.sidebar.classList.remove('closed');
+        elements.sidebar.classList.add('open');
     };
-    elements.mobileToggle?.addEventListener('click', toggleSidebar);
+    const closeSidebar = () => {
+        elements.sidebar.classList.remove('open');
+        elements.sidebar.classList.add('closed');
+    };
+    const toggleSidebar = () => { isSidebarOpen() ? closeSidebar() : openSidebar(); };
+
+    elements.mobileToggle?.addEventListener('click', closeSidebar);
     elements.mobileOpen?.addEventListener('click', toggleSidebar);
 
     // Bottom-nav 🔍 Find: switches to Map view, opens the sidebar if closed,
@@ -238,10 +250,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const mapBtn = document.querySelector('.pp-nav-item[data-target="view-map"]');
         const onMap = document.getElementById('view-map')?.classList.contains('active');
         if (!onMap) mapBtn?.click();
-        if (elements.sidebar.classList.contains('open')) {
+        if (isSidebarOpen()) {
             elements.findButton?.click();
         } else {
-            elements.sidebar.classList.add('open');
+            openSidebar();
         }
     });
     map.on('click', (e) => {

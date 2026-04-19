@@ -189,6 +189,9 @@ input, textarea { font-family: inherit; }
     box-shadow: var(--shadow-float);
 }
 
+/* Desktop close (X button) — hide the panel until 🔍 in the nav reopens it. */
+.sidebar.closed { display: none; }
+
 .glass-panel {
     background: rgba(247, 244, 238, 0.82);
     backdrop-filter: blur(24px) saturate(160%);
