@@ -24,7 +24,7 @@ export const amenityDefinitions = {
     'bench': { title: 'Bench', emoji: '🪑', color: 'var(--color-water)', queryTags: ['amenity=bench'], attributeTags: ['bench=yes'], canBeArea: false },
     'playground': { title: 'Playground', emoji: '🤸', color: 'var(--color-comfort)', queryTags: ['leisure=playground'], attributeTags: ['playground=yes'], canBeArea: true },
     'camp_site': { title: 'Camp Site', emoji: '🏕️', color: 'var(--color-comfort)', queryTags: ['tourism=camp_site'], canBeArea: true },
-    'charging_station': { title: 'EV Charging', emoji: '🔌', color: 'var(--color-water)', queryTags: ['amenity=charging_station'], canBeArea: false },
+    'charging_station': { title: 'Power / EV Charging', emoji: '🔌', color: 'var(--color-water)', queryTags: ['amenity=charging_station', 'amenity=power_supply', 'man_made=power_outlet'], attributeTags: ['socket=yes'], canBeArea: false },
     'viewpoint': { title: 'Viewpoint', emoji: '🌄', color: 'var(--color-comfort)', queryTags: ['tourism=viewpoint'], canBeArea: false },
     'beach': { title: 'Beach', emoji: '🏖️', color: 'var(--color-water)', queryTags: ['natural=beach'], canBeArea: true }
 };
