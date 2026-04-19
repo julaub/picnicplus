@@ -696,12 +696,22 @@ details[open] summary { border-bottom: 1px solid rgba(20,22,19,0.06); color: var
    ========================================= */
 @media (max-width: 768px) {
     .sidebar {
+        /* position: fixed (not absolute) so the sidebar shares the SAME
+           visual-viewport anchor as the floating bottom nav — otherwise
+           mobile-browser URL-bar show/hide drifts them relative to each
+           other and the in-sidebar CTA overlaps the nav. */
+        position: fixed;
         transform: translateY(120%);
-        top: auto; bottom: 0; left: 0;
-        width: 100%; height: 85vh;
+        /* End ABOVE the floating bottom nav (height 68 + 14 gap + 14 breathing
+           = 96 + safe-area). The CTA is anchored to the sidebar's bottom, so
+           it inherits this clearance automatically. */
+        top: auto; left: 0; right: 0;
+        bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+        width: 100%; height: auto; max-height: 78dvh;
+        min-height: 60dvh;
         border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+        padding-bottom: 0;
     }
 
     .sidebar.open { transform: translateY(0); }
@@ -1475,42 +1485,19 @@ details[open] summary { border-bottom: 1px solid rgba(20,22,19,0.06); color: var
 .pp-info-success  { background: var(--green-50); color: var(--green-800); }
 .pp-info-loading  { background: rgba(14,122,77,0.06); color: var(--green-800); }
 
-/* Floating CTA bar — sibling of .sidebar (NOT a child) so its
-   position: fixed anchors to the visual viewport rather than the sidebar's
-   transform containing block. This is what keeps it from overlapping the
-   floating bottom nav when the mobile URL bar collapses/expands. */
-.pp-cta-bar.pp-cta-bar--floating {
-    position: fixed;
-    z-index: 1001;
+/* CTA bar inside sidebar — anchored to the sidebar's bottom. The sidebar
+   itself is sized to end above the floating bottom nav (see mobile media
+   query for .sidebar), so the CTA is naturally clear of the nav and we
+   don't need any position:fixed gymnastics that fight the slide-up
+   transform's containing block. */
+.pp-side-panel .pp-cta-bar {
+    position: absolute; left: 0; right: 0; bottom: 0;
     padding: 14px 16px;
     background: linear-gradient(to top, var(--bg) 65%, rgba(247,244,238,0));
-    pointer-events: none; /* re-enabled on the button below */
-}
-.pp-cta-bar.pp-cta-bar--floating .pp-cta { pointer-events: auto; }
-
-/* Desktop: anchor inside the sidebar's footprint (just above the bottom nav).
-   The sidebar is at left:20, width:var(--sidebar-width), bottom:100px. */
-@media (min-width: 769px) {
-    .pp-cta-bar.pp-cta-bar--floating {
-        left: 20px;
-        width: var(--sidebar-width);
-        bottom: 100px;
-    }
 }
 
-/* Mobile: full width above the floating bottom nav. */
 @media (max-width: 768px) {
-    .pp-cta-bar.pp-cta-bar--floating {
-        left: 0; right: 0;
-        bottom: calc(96px + env(safe-area-inset-bottom, 0px));
-        transform: translateY(120%);
-        transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-    }
-    /* Reveal CTA in lock-step with the sidebar slide-up. */
-    .sidebar.open ~ .pp-cta-bar.pp-cta-bar--floating {
-        transform: translateY(0);
-    }
     .pp-side-scroll {
-        padding-bottom: 200px !important;
+        padding-bottom: 96px !important;
     }
 }
