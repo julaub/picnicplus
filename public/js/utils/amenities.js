@@ -4,7 +4,7 @@ export const amenityDefinitions = {
     'drinking_water': { title: 'Drinking Water', emoji: '💧', color: 'var(--color-water)', queryTags: ['amenity=drinking_water', 'drinking_water=yes'], canBeArea: false },
     'water_point': { title: 'Water Point/Tap', emoji: '💧', color: 'var(--color-water)', queryTags: ['amenity=water_point'], canBeArea: false },
     'fountain': { title: 'Fountain', emoji: '💧', color: 'var(--color-water)', queryTags: ['amenity=fountain'], canBeArea: false },
-    'picnic_table': { title: 'Picnic Table', emoji: '🍽️', color: 'var(--color-water)', queryTags: ['leisure=picnic_table'], attributeTags: ['picnic_table=yes'], canBeArea: true },
+    'picnic_table': { title: 'Picnic Table / Site', emoji: '🍽️', color: 'var(--color-water)', queryTags: ['leisure=picnic_table', 'tourism=picnic_site'], attributeTags: ['picnic_table=yes'], canBeArea: true },
     'food_court': { title: 'Food Court', emoji: '☕', color: 'var(--color-comfort)', queryTags: ['amenity=food_court'], canBeArea: true },
     'cafe': { title: 'Cafe', emoji: '☕', color: 'var(--color-comfort)', queryTags: ['amenity=cafe'], canBeArea: true },
     'restaurant': { title: 'Restaurant', emoji: '🍽️', color: 'var(--color-comfort)', queryTags: ['amenity=restaurant'], canBeArea: true },
@@ -24,7 +24,9 @@ export const amenityDefinitions = {
     'bench': { title: 'Bench', emoji: '🪑', color: 'var(--color-water)', queryTags: ['amenity=bench'], attributeTags: ['bench=yes'], canBeArea: false },
     'playground': { title: 'Playground', emoji: '🤸', color: 'var(--color-comfort)', queryTags: ['leisure=playground'], attributeTags: ['playground=yes'], canBeArea: true },
     'camp_site': { title: 'Camp Site', emoji: '🏕️', color: 'var(--color-comfort)', queryTags: ['tourism=camp_site'], canBeArea: true },
-    'charging_station': { title: 'EV Charging', emoji: '🔌', color: 'var(--color-water)', queryTags: ['amenity=charging_station'], canBeArea: false }
+    'charging_station': { title: 'EV Charging', emoji: '🔌', color: 'var(--color-water)', queryTags: ['amenity=charging_station'], canBeArea: false },
+    'viewpoint': { title: 'Viewpoint', emoji: '🌄', color: 'var(--color-comfort)', queryTags: ['tourism=viewpoint'], canBeArea: false },
+    'beach': { title: 'Beach', emoji: '🏖️', color: 'var(--color-water)', queryTags: ['natural=beach'], canBeArea: true }
 };
 
 export const amenityGroupDefinitions = {
@@ -62,7 +64,9 @@ export const uiSections = [
             { id: 'playground', type: 'single' },
             { id: 'food_nearby_group', type: 'group' },
             { id: 'camp_site', type: 'single' },
-            { id: 'charging_station', type: 'single' }
+            { id: 'charging_station', type: 'single' },
+            { id: 'viewpoint', type: 'single' },
+            { id: 'beach', type: 'single' }
         ]
     }
 ];
