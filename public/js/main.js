@@ -230,6 +230,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
     elements.mobileToggle?.addEventListener('click', toggleSidebar);
     elements.mobileOpen?.addEventListener('click', toggleSidebar);
+
+    // Bottom-nav 🔍 Find: switches to Map view, opens the sidebar if closed,
+    // or triggers Find Amenity Clusters if already open.
+    document.getElementById('nav-btn-find')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        const mapBtn = document.querySelector('.pp-nav-item[data-target="view-map"]');
+        const onMap = document.getElementById('view-map')?.classList.contains('active');
+        if (!onMap) mapBtn?.click();
+        if (elements.sidebar.classList.contains('open')) {
+            elements.findButton?.click();
+        } else {
+            elements.sidebar.classList.add('open');
+        }
+    });
     map.on('click', (e) => {
         elements.sidebar.classList.remove('open'); // Close on map click on mobile
         

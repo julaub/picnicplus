@@ -696,19 +696,14 @@ details[open] summary { border-bottom: 1px solid rgba(20,22,19,0.06); color: var
    ========================================= */
 @media (max-width: 768px) {
     .sidebar {
-        /* position: fixed (not absolute) so the sidebar shares the SAME
-           visual-viewport anchor as the floating bottom nav — otherwise
-           mobile-browser URL-bar show/hide drifts them relative to each
-           other and the in-sidebar CTA overlaps the nav. */
         position: fixed;
         transform: translateY(120%);
-        /* End ABOVE the floating bottom nav (height 68 + 14 gap + 14 breathing
-           = 96 + safe-area). The CTA is anchored to the sidebar's bottom, so
-           it inherits this clearance automatically. */
+        /* Sidebar ends above the floating bottom nav. There is no CTA inside
+           the sidebar anymore — the 🔍 Find action lives in the nav itself. */
         top: auto; left: 0; right: 0;
         bottom: calc(96px + env(safe-area-inset-bottom, 0px));
         width: 100%; height: auto; max-height: 78dvh;
-        min-height: 60dvh;
+        min-height: 50dvh;
         border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
         padding-bottom: 0;
@@ -1338,19 +1333,20 @@ details[open] summary { border-bottom: 1px solid rgba(20,22,19,0.06); color: var
 .pp-nav {
     position: fixed; left: 10px; right: 10px;
     bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-    height: 68px; z-index: 30;
-    border-radius: 24px;
+    height: 64px; z-index: 30;
+    border-radius: 22px;
     background: rgba(255,255,255,0.82);
     backdrop-filter: blur(22px) saturate(180%);
     -webkit-backdrop-filter: blur(22px) saturate(180%);
     border: 1px solid rgba(20,22,19,0.07);
     box-shadow: var(--shadow-float);
-    /* Flex so hidden items don't leave empty grid columns; visible items stay centered */
-    display: flex; justify-content: space-around; align-items: stretch;
-    padding: 6px 4px 8px;
+    /* Tight, centered row. */
+    display: flex; justify-content: center; align-items: stretch;
+    gap: 4px;
+    padding: 6px 8px 8px;
 }
 
-.pp-nav .pp-nav-item { flex: 1 1 0; min-width: 0; max-width: 96px; }
+.pp-nav .pp-nav-item { flex: 0 1 auto; min-width: 60px; max-width: 88px; }
 
 .pp-nav-item {
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
@@ -1485,19 +1481,5 @@ details[open] summary { border-bottom: 1px solid rgba(20,22,19,0.06); color: var
 .pp-info-success  { background: var(--green-50); color: var(--green-800); }
 .pp-info-loading  { background: rgba(14,122,77,0.06); color: var(--green-800); }
 
-/* CTA bar inside sidebar — anchored to the sidebar's bottom. The sidebar
-   itself is sized to end above the floating bottom nav (see mobile media
-   query for .sidebar), so the CTA is naturally clear of the nav and we
-   don't need any position:fixed gymnastics that fight the slide-up
-   transform's containing block. */
-.pp-side-panel .pp-cta-bar {
-    position: absolute; left: 0; right: 0; bottom: 0;
-    padding: 14px 16px;
-    background: linear-gradient(to top, var(--bg) 65%, rgba(247,244,238,0));
-}
-
-@media (max-width: 768px) {
-    .pp-side-scroll {
-        padding-bottom: 96px !important;
-    }
-}
+/* CTA bar removed — the Find action now lives in the bottom nav (🔍). */
+.pp-side-scroll { padding-bottom: 24px; }
