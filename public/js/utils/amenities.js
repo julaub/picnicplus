@@ -7,6 +7,14 @@ export const amenityDefinitions = {
     'picnic_table': { title: 'Picnic Table', emoji: '🍽️', color: 'var(--color-water)', queryTags: ['leisure=picnic_table'], attributeTags: ['picnic_table=yes'], canBeArea: true },
     'food_court': { title: 'Food Court', emoji: '☕', color: 'var(--color-comfort)', queryTags: ['amenity=food_court'], canBeArea: true },
     'cafe': { title: 'Cafe', emoji: '☕', color: 'var(--color-comfort)', queryTags: ['amenity=cafe'], canBeArea: true },
+    'restaurant': { title: 'Restaurant', emoji: '🍽️', color: 'var(--color-comfort)', queryTags: ['amenity=restaurant'], canBeArea: true },
+    'fast_food': { title: 'Fast Food', emoji: '🍔', color: 'var(--color-comfort)', queryTags: ['amenity=fast_food'], canBeArea: true },
+    'ice_cream': { title: 'Ice Cream', emoji: '🍦', color: 'var(--color-comfort)', queryTags: ['amenity=ice_cream'], canBeArea: true },
+    'pub': { title: 'Pub', emoji: '🍺', color: 'var(--color-comfort)', queryTags: ['amenity=pub'], canBeArea: true },
+    'bar': { title: 'Bar', emoji: '🍸', color: 'var(--color-comfort)', queryTags: ['amenity=bar'], canBeArea: true },
+    'biergarten': { title: 'Beer Garden', emoji: '🍻', color: 'var(--color-comfort)', queryTags: ['amenity=biergarten'], canBeArea: true },
+    'bakery': { title: 'Bakery', emoji: '🥐', color: 'var(--color-comfort)', queryTags: ['shop=bakery'], canBeArea: true },
+    'marketplace': { title: 'Marketplace', emoji: '🛒', color: 'var(--color-comfort)', queryTags: ['amenity=marketplace'], canBeArea: true },
     'toilets': { title: 'Toilets', emoji: '🚽', color: 'var(--color-facility)', queryTags: ['amenity=toilets'], attributeTags: ['toilets=yes'], canBeArea: true },
     'shower': { title: 'Shower', emoji: '🚿', color: 'var(--color-facility)', queryTags: ['amenity=shower'], attributeTags: ['shower=yes'], canBeArea: true },
     'waste_basket': { title: 'Waste Basket', emoji: '🗑️', color: 'var(--text-muted)', queryTags: ['amenity=waste_basket'], canBeArea: false },
@@ -23,7 +31,7 @@ export const amenityGroupDefinitions = {
     'fire_place_group': { title: 'Fire Place (Any)', includes: ['bbq', 'firepit'], subtext: '(BBQ, Fire Pit, or fireplace=yes)' },
     'water_source_group': { title: 'Water Source (Any)', includes: ['drinking_water', 'water_point', 'fountain'], subtext: '(Drinking Water, Fountain, Tap)' },
     'waste_disposal_group': { title: 'Waste Disposal (Any)', includes: ['waste_basket', 'waste_disposal', 'recycling'], subtext: '(Basket, Disposal, Recycling)' },
-    'food_nearby_group': { title: 'Food Nearby (Any)', includes: ['cafe', 'food_court'], subtext: '(Cafe, Food Court)' },
+    'food_nearby_group': { title: 'Food Nearby (Any)', includes: ['cafe', 'restaurant', 'fast_food', 'food_court', 'ice_cream', 'pub', 'bar', 'biergarten', 'bakery', 'marketplace'], subtext: '(Restaurant, Cafe, Fast Food, Bakery, Pub, Bar, Marketplace…)' },
     'toilets_group': { title: 'Toilets (Any)', includes: ['toilets'], subtext: '(Toilets amenity or toilets=yes)' },
     'shelter_group': { title: 'Shelter (Any)', includes: ['shelter'], subtext: '(Shelter, Wilderness Hut)' }
 };
