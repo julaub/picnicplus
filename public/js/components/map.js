@@ -38,53 +38,46 @@ export const initializeMap = (containerId) => {
     return { map, highlightLayer, emojiMarkerLayer, userMarkerLayer };
 };
 
-export const renderClusters = (clusters, radius, { map, highlightLayer, emojiMarkerLayer }) => {
+// Per-render bookkeeping so selectClusterPin() can find markers by cluster index.
+let _markerIndex = []; // [{ clusterIdx, markerEl, circle }]
+
+export const renderClusters = (clusters, radius, { map, highlightLayer, emojiMarkerLayer }, { onClusterClick } = {}) => {
     highlightLayer.clearLayers();
     emojiMarkerLayer.clearLayers();
+    _markerIndex = [];
 
-    clusters.forEach((cluster, index) => {
-        // Outline Circle
-        L.circle(cluster.center, {
-            radius: radius,
-            color: 'var(--primary)',
-            fillColor: 'rgba(0, 210, 255, 0.2)',
+    clusters.forEach((cluster, clusterIdx) => {
+        // Cluster outline circle
+        const circle = L.circle(cluster.center, {
+            radius,
+            color: '#0E7A4D',
+            fillColor: 'rgba(14,122,77,0.18)',
             fillOpacity: 0.5,
             weight: 2,
             dashArray: '5, 5'
         }).addTo(highlightLayer);
 
-        // Map amenities
         cluster.items.forEach(item => {
             const markerDiv = document.createElement('div');
             markerDiv.className = 'custom-cluster-marker';
+            markerDiv.dataset.clusterIdx = String(clusterIdx);
             markerDiv.innerHTML = `<span class="amenity-emoji-marker">${item.typeInfo.emoji}</span>`;
             markerDiv.style.borderColor = item.typeInfo.color;
-            markerDiv.style.boxShadow = `0 0 10px ${item.typeInfo.color}66`;
 
             const icon = L.divIcon({
                 html: markerDiv,
                 className: '',
                 iconSize: [36, 36],
-                iconAnchor: [18, 18],
-                popupAnchor: [0, -18]
+                iconAnchor: [18, 18]
             });
 
-            const popupContent = `
-                <div class="popup-inner">
-                    <h4>${item.typeInfo.title}</h4>
-                    <p style="color:var(--text-muted); font-size:12px; margin-bottom: 8px;">
-                        Found near cluster center.
-                    </p>
-                    <button class="btn-primary" style="padding: 8px 12px; font-size: 13px;"
-                        onclick="window.createPicnicPrompt(${item.lat}, ${item.lon})">
-                        Create Event Here
-                    </button>
-                </div>
-            `;
+            const marker = L.marker([item.lat, item.lon], { icon }).addTo(emojiMarkerLayer);
+            marker.on('click', (e) => {
+                L.DomEvent.stopPropagation(e);
+                onClusterClick?.(clusterIdx, cluster);
+            });
 
-            L.marker([item.lat, item.lon], { icon })
-                .bindPopup(popupContent)
-                .addTo(emojiMarkerLayer);
+            _markerIndex.push({ clusterIdx, markerEl: markerDiv, circle });
         });
     });
 
@@ -92,4 +85,20 @@ export const renderClusters = (clusters, radius, { map, highlightLayer, emojiMar
         const bounds = L.featureGroup(highlightLayer.getLayers()).getBounds();
         map.fitBounds(bounds, { padding: [50, 50], animate: true, duration: 1 });
     }
+};
+
+// Apply visual "selected" state to all markers belonging to a cluster index.
+// Pass null to clear selection.
+export const selectClusterPin = (clusterIdx) => {
+    _markerIndex.forEach(({ clusterIdx: ci, markerEl }) => {
+        markerEl.classList.toggle('is-selected', ci === clusterIdx);
+    });
+};
+
+// Fly the map to a cluster's center and select its pin.
+export const focusCluster = (map, clusters, clusterIdx) => {
+    const c = clusters[clusterIdx];
+    if (!c) return;
+    map.flyTo(c.center, Math.max(map.getZoom(), 16), { duration: 0.6 });
+    selectClusterPin(clusterIdx);
 };

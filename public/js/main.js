@@ -2,7 +2,9 @@ import { uiSections, amenityDefinitions, amenityGroupDefinitions } from './utils
 import { conditionDefinitions } from './utils/conditions.js';
 import { searchLocation } from './api/search.js';
 import { buildOverpassQuery, fetchAmenities, clusterAmenities, filterByConditions } from './api/overpass.js';
-import { initializeMap, renderClusters } from './components/map.js';
+import { initializeMap, renderClusters, selectClusterPin, focusCluster } from './components/map.js';
+import { initSpotDetail, showSpot as showSpotDetail, hide as hideSpotDetail, isOpen as isSpotDetailOpen } from './components/spot-detail.js';
+import { initResultsList, updateResults, clearResults } from './components/results-list.js';
 import { initializeNavigation } from './components/navigation.js';
 import { initParticipants } from './components/participants.js';
 import { initPotluck } from './components/potluck.js';
@@ -45,6 +47,37 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let addedConditions = [];
     let currentClusters = [];
+
+    // Helper: current effective amenity selections (keys or group ids).
+    const currentSelectedIds = () =>
+        Array.from(document.querySelectorAll('.amenity-cb:checked')).map(cb => cb.id.replace('-checkbox', ''));
+
+    // Select a cluster (from pin click OR results-list card click).
+    const selectCluster = (idx, cluster, { fly = false } = {}) => {
+        selectClusterPin(idx);
+        if (fly) focusCluster(map, currentClusters, idx);
+        showSpotDetail(cluster, {
+            selectedAmenities: currentSelectedIds(),
+            conditions: addedConditions,
+            mapCenter: [map.getCenter().lat, map.getCenter().lng]
+        });
+    };
+
+    // Spot-detail sheet init: "Use this spot" creates the event at the cluster's coords.
+    initSpotDetail({
+        onCreateEvent: (lat, lon) => {
+            window.createPicnicPrompt?.(lat, lon);
+            hideSpotDetail();
+            selectClusterPin(null);
+        },
+        onClose: () => selectClusterPin(null)
+    });
+
+    // Results list init.
+    initResultsList({
+        container: document.getElementById('results-list'),
+        onSelect: (idx, cluster) => selectCluster(idx, cluster, { fly: true })
+    });
 
     // --- Bootstrapping UI ---
     const updateStatus = (text, type = 'neutral') => {
@@ -280,6 +313,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     map.on('click', (e) => {
         elements.sidebar.classList.remove('open'); // Close on map click on mobile
+        // Deselect any selected pin and dismiss the spot detail sheet.
+        if (isSpotDetailOpen()) hideSpotDetail();
+        selectClusterPin(null);
         
         // Show "Create Picnic" popup if we are not currently viewing a specific picnic
         if (!state.picnicId) {
@@ -379,6 +415,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!data || !data.elements || data.elements.length === 0) {
                 updateStatus("No spots found — try relaxing your filters.", "empty");
                 renderClusters([], radius, mapState);
+                clearResults();
                 return;
             }
 
@@ -409,8 +446,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 finalClusters = await filterByConditions(finalClusters, addedConditions, radius);
             }
 
-            renderClusters(finalClusters, radius, mapState);
+            renderClusters(finalClusters, radius, mapState, {
+                onClusterClick: (idx, cluster) => selectCluster(idx, cluster, { fly: false })
+            });
             currentClusters = finalClusters;
+
+            updateResults(finalClusters, {
+                selectedAmenities: currentSelectedIds(),
+                mapCenter: [map.getCenter().lat, map.getCenter().lng]
+            });
 
             if (finalClusters.length > 0) {
                 updateStatus(`Found ${finalClusters.length} beautiful picnic spot(s)!`, 'success');
