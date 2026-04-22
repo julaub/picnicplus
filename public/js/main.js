@@ -48,12 +48,33 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Bootstrapping UI ---
     const updateStatus = (text, type = 'neutral') => {
-        elements.statusText.textContent = text;
+        // Rebuild status box content so we can append action links for empty states.
         elements.statusBox.className = `pp-info pp-info-${type}`;
-        if (type === 'loading') elements.statusIcon.textContent = '⏳';
-        else if (type === 'error') elements.statusIcon.textContent = '⚠️';
-        else if (type === 'success') elements.statusIcon.textContent = '✅';
-        else elements.statusIcon.textContent = 'ℹ️';
+        const icon = { loading: '⏳', error: '⚠️', success: '✅', empty: '🔍' }[type] || 'ℹ️';
+        elements.statusBox.innerHTML = `
+            <span class="status-icon">${icon}</span>
+            <span class="status-text">${text}</span>
+            ${type === 'empty' ? '<button type="button" class="pp-link-btn" id="status-reset-link">Reset filters</button>' : ''}
+        `;
+        // Re-cache references that may be re-queried elsewhere.
+        elements.statusIcon = elements.statusBox.querySelector('.status-icon');
+        elements.statusText = elements.statusBox.querySelector('.status-text');
+        const resetLink = elements.statusBox.querySelector('#status-reset-link');
+        if (resetLink) resetLink.addEventListener('click', resetAllFilters);
+    };
+
+    // Reset all amenity selections, proximity filters, and require-all toggle.
+    const resetAllFilters = () => {
+        document.querySelectorAll('.amenity-cb').forEach(cb => { cb.checked = false; });
+        document.querySelectorAll('.pp-amenity-card.on').forEach(c => c.classList.remove('on'));
+        addedConditions = [];
+        renderAddedConditions();
+        if (elements.requireAllCheckbox) {
+            elements.requireAllCheckbox.checked = false;
+            document.getElementById('require-all-toggle')?.classList.remove('on');
+        }
+        updateAmenityCount();
+        updateStatus("Filters cleared. Pick amenities and tap Find.", "neutral");
     };
 
     const updateAmenityCount = () => {
@@ -242,6 +263,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     elements.mobileToggle?.addEventListener('click', closeSidebar);
     elements.mobileOpen?.addEventListener('click', toggleSidebar);
+    document.getElementById('reset-all-filters')?.addEventListener('click', resetAllFilters);
 
     // Bottom-nav 🔍 Find: switches to Map view, opens the sidebar if closed,
     // or triggers Find Amenity Clusters if already open.
@@ -317,8 +339,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         return Array.from(selected);
     };
 
+    // Cache the find-button's resting label so we can swap it during search.
+    const findBtnDefaultHTML = elements.findButton.innerHTML;
+    const setFindLoading = (loading) => {
+        elements.findButton.disabled = loading;
+        elements.findButton.classList.toggle('is-loading', loading);
+        elements.findButton.innerHTML = loading
+            ? '<span class="pp-spinner" aria-hidden="true"></span> Searching…'
+            : findBtnDefaultHTML;
+    };
+
     elements.findButton.addEventListener('click', async () => {
         updateStatus("Clearing map...", "loading");
+        setFindLoading(true);
 
         // Hide sidebar on mobile after clicking find
         if (window.innerWidth <= 768) {
@@ -328,6 +361,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const effectiveAmenities = getSelectedAmenities();
         if (effectiveAmenities.length === 0) {
             updateStatus("Please select at least one amenity.", "error");
+            setFindLoading(false);
             return;
         }
 
@@ -337,16 +371,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             updateStatus(`Querying Overpass API for ${effectiveAmenities.length} amenity types...`, 'loading');
-            elements.findButton.disabled = true;
 
             const query = buildOverpassQuery(effectiveAmenities, bbox);
             console.log("Query:\n", query);
             const data = await fetchAmenities(query);
 
             if (!data || !data.elements || data.elements.length === 0) {
-                updateStatus("No selected amenities found in this area.", "error");
+                updateStatus("No spots found — try relaxing your filters.", "empty");
                 renderClusters([], radius, mapState);
-                elements.findButton.disabled = false;
                 return;
             }
 
@@ -383,14 +415,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (finalClusters.length > 0) {
                 updateStatus(`Found ${finalClusters.length} beautiful picnic spot(s)!`, 'success');
             } else {
-                updateStatus("No spots matched all your criteria. Try adjusting filters.", "error");
+                updateStatus("No spots matched all your criteria. Try relaxing your filters.", "empty");
             }
 
         } catch (error) {
             updateStatus(`Error executing search: ${error.message}`, "error");
             console.error(error);
         } finally {
-            elements.findButton.disabled = false;
+            setFindLoading(false);
         }
     });
 

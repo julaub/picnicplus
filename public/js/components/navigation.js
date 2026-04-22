@@ -35,6 +35,11 @@ export const initializeNavigation = () => {
             if (targetId === 'view-map' && window.mapObj) {
                 setTimeout(() => window.mapObj.invalidateSize(), 100);
             }
+
+            // Smooth scroll-to-top inside the activated view's scroll container.
+            const targetView = document.getElementById(targetId);
+            const scroller = targetView?.querySelector('.pp-scroll, .pp-side-scroll');
+            scroller?.scrollTo({ top: 0, behavior: 'smooth' });
         });
     });
 };
