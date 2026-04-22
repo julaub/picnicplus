@@ -110,7 +110,7 @@ export const clusterAmenities = (elements, effectiveAmenities, radius) => {
     return { clusters, allItems };
 };
 
-export const filterByConditions = async (clusters, conditions, bboxRadius) => {
+export const filterByConditions = async (clusters, conditions, bboxRadius, logic = 'AND') => {
     if (conditions.length === 0 || clusters.length === 0) return clusters;
 
     // We do one big query for conditions around all clusters
@@ -137,11 +137,9 @@ export const filterByConditions = async (clusters, conditions, bboxRadius) => {
         const lat = cluster.center[0];
         const lon = cluster.center[1];
 
-        // For each condition, verify at least one element exists within distance
-        return conditions.every(cond => {
+        const matches = cond => {
             const def = conditionDefinitions[cond.type];
             const [k, v] = def.queryTag.split('=');
-
             return condElements.some(el => {
                 if (!(el.tags && el.tags[k] === v)) return false;
                 const elLat = el.lat || (el.center && el.center.lat);
@@ -149,6 +147,7 @@ export const filterByConditions = async (clusters, conditions, bboxRadius) => {
                 if (!elLat || !elLon) return false;
                 return calculateDistance(lat, lon, elLat, elLon) <= cond.distance;
             });
-        });
+        };
+        return logic === 'OR' ? conditions.some(matches) : conditions.every(matches);
     });
 };

@@ -47,6 +47,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let addedConditions = [];
     let currentClusters = [];
+    let proxLogicMode = 'AND'; // 'AND' (all must match) | 'OR' (at least one)
 
     // Helper: current effective amenity selections (keys or group ids).
     const currentSelectedIds = () =>
@@ -158,12 +159,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const PROX_EMOJI = { bus_stop: '🚌', supermarket: '🛒', convenience: '🏪', parking: '🅿️' };
 
-    const renderAddedConditions = () => {
+    const renderAddedConditions = (newlyAddedType = null) => {
         elements.addedConditionsList.innerHTML = '';
         addedConditions.forEach((cond, index) => {
             const def = conditionDefinitions[cond.type];
             const div = document.createElement('div');
             div.className = 'pp-filter';
+            if (cond.type === newlyAddedType) div.classList.add('pp-filter--enter');
             div.style.marginBottom = '8px';
             div.innerHTML = `
                 <div class="pp-filter-icon">${PROX_EMOJI[cond.type] || '📍'}</div>
@@ -260,14 +262,60 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     elements.distanceSlider.addEventListener('input', (e) => elements.distanceValue.textContent = e.target.value);
 
-    elements.addConditionBtn.addEventListener('click', () => {
-        const allTypes = ['bus_stop', 'supermarket', 'convenience', 'parking'];
+    // Add-filter modal: pick a proximity filter type from a grid of cards.
+    const PROX_ALL_TYPES = ['bus_stop', 'supermarket', 'convenience', 'parking'];
+    const openAddFilterModal = () => {
         const used = new Set(addedConditions.map(c => c.type));
-        const next = allTypes.find(t => !used.has(t));
-        if (!next) return;
-        addedConditions.push({ type: next, distance: 200 });
+        const available = PROX_ALL_TYPES.filter(t => !used.has(t));
+        if (!available.length) {
+            updateStatus('All proximity filters are already added.', 'neutral');
+            return;
+        }
+        const modal = document.createElement('div');
+        modal.className = 'pp-modal-scrim';
+        modal.innerHTML = `
+            <div class="pp-modal-sheet" role="dialog" aria-label="Add proximity filter">
+                <div class="pp-modal-handle" aria-hidden="true"></div>
+                <div class="pp-modal-title">Add proximity filter</div>
+                <div class="pp-modal-grid">
+                    ${available.map(t => `
+                        <button type="button" class="pp-modal-card" data-type="${t}">
+                            <span class="pp-modal-emoji">${PROX_EMOJI[t] || '📍'}</span>
+                            <span class="pp-modal-label">${conditionDefinitions[t].title}</span>
+                        </button>
+                    `).join('')}
+                </div>
+                <button type="button" class="pp-link-btn pp-modal-cancel">Cancel</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        // Animate in next tick.
+        requestAnimationFrame(() => modal.classList.add('open'));
+
+        const close = () => {
+            modal.classList.remove('open');
+            setTimeout(() => modal.remove(), 280);
+        };
+        modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+        modal.querySelector('.pp-modal-cancel').addEventListener('click', close);
+        modal.querySelectorAll('.pp-modal-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const type = card.dataset.type;
+                addedConditions.push({ type, distance: 200 });
+                renderAddedConditions(type);
+                close();
+            });
+        });
+    };
+    elements.addConditionBtn.addEventListener('click', openAddFilterModal);
+
+    // Pre-populate 2 useful defaults on first load (unless the user has already
+    // configured something in this session).
+    if (addedConditions.length === 0) {
+        addedConditions.push({ type: 'bus_stop', distance: 200 });
+        addedConditions.push({ type: 'parking', distance: 300 });
         renderAddedConditions();
-    });
+    }
 
     // Toggle row for require-all
     const toggleRow = document.getElementById('require-all-toggle-row');
@@ -297,6 +345,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     elements.mobileToggle?.addEventListener('click', closeSidebar);
     elements.mobileOpen?.addEventListener('click', toggleSidebar);
     document.getElementById('reset-all-filters')?.addEventListener('click', resetAllFilters);
+
+    // Proximity logic toggle (AND ↔ OR).
+    const proxLogicBtn = document.getElementById('prox-logic-toggle');
+    proxLogicBtn?.addEventListener('click', () => {
+        proxLogicMode = proxLogicMode === 'AND' ? 'OR' : 'AND';
+        proxLogicBtn.querySelector('.pp-logic-label').textContent = proxLogicMode;
+        proxLogicBtn.setAttribute('aria-pressed', String(proxLogicMode === 'AND'));
+        proxLogicBtn.classList.toggle('is-or', proxLogicMode === 'OR');
+    });
+
+    // Desktop sidebar collapse handle + reopen FAB, with localStorage persistence.
+    const SIDEBAR_COLLAPSED_KEY = 'pp-sidebar-collapsed';
+    const applyPersistedSidebarState = () => {
+        if (!window.matchMedia('(min-width: 769px)').matches) return;
+        try {
+            if (localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1') {
+                elements.sidebar.classList.add('closed');
+            }
+        } catch (_) { /* localStorage may be unavailable */ }
+    };
+    applyPersistedSidebarState();
+    document.getElementById('sidebar-collapse')?.addEventListener('click', () => {
+        elements.sidebar.classList.add('closed');
+        try { localStorage.setItem(SIDEBAR_COLLAPSED_KEY, '1'); } catch (_) {}
+    });
+    document.getElementById('sidebar-reopen')?.addEventListener('click', () => {
+        elements.sidebar.classList.remove('closed');
+        try { localStorage.setItem(SIDEBAR_COLLAPSED_KEY, '0'); } catch (_) {}
+    });
 
     // Bottom-nav 🔍 Find: switches to Map view, opens the sidebar if closed,
     // or triggers Find Amenity Clusters if already open.
@@ -443,7 +520,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (addedConditions.length > 0 && finalClusters.length > 0) {
                 updateStatus(`Checking proximity conditions for ${finalClusters.length} clusters...`, 'loading');
-                finalClusters = await filterByConditions(finalClusters, addedConditions, radius);
+                finalClusters = await filterByConditions(finalClusters, addedConditions, radius, proxLogicMode);
             }
 
             renderClusters(finalClusters, radius, mapState, {

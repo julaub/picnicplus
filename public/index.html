@@ -71,7 +71,10 @@
                     <div class="pp-section-label">
                         <span class="pp-step-num">3</span>
                         <span class="pp-section-title">Proximity filters</span>
-                        <span class="pp-section-hint">AND logic</span>
+                        <button type="button" id="prox-logic-toggle" class="pp-logic-pill" aria-pressed="true" title="Toggle AND / OR logic">
+                            <span class="pp-logic-label">AND</span>
+                            <span class="pp-logic-swap">logic</span>
+                        </button>
                     </div>
                     <div id="added-conditions-list" style="padding:0 16px;"></div>
                     <button class="pp-add-filter" id="add-condition-button">
@@ -137,6 +140,17 @@
             <!-- Hidden mobile-open trigger — kept for any external callers but
                  visually replaced by the 🔍 Find item in the bottom nav. -->
             <button id="mobile-open" class="mobile-open" hidden aria-hidden="true"></button>
+
+            <!-- Desktop collapse handle on the sidebar's right edge. Hidden on
+                 mobile where the bottom-sheet pattern + 🔍 nav item apply. -->
+            <button id="sidebar-collapse" class="pp-side-handle" type="button" aria-label="Collapse filters">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+
+            <!-- Floating re-open FAB, shown only on desktop when sidebar is collapsed. -->
+            <button id="sidebar-reopen" class="pp-side-fab" type="button" aria-label="Open filters">
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
         </main>
 
         <!-- Picnic Synthesis View -->

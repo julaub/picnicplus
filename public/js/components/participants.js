@@ -66,7 +66,35 @@ export const initParticipants = (containerId) => {
         card.style.marginTop = '14px';
 
         if (participants.length === 0) {
-            card.innerHTML = `<div style="padding:24px 16px;text-align:center;color:var(--ink-400);font-size:14px;">No guests yet. Share the invite link to get started.</div>`;
+            card.innerHTML = `
+                <div class="pp-empty-state" style="padding:36px 20px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;">
+                    <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#E6F3EC,#FBE9D8);display:flex;align-items:center;justify-content:center;font-size:34px;box-shadow:var(--shadow-1);">
+                        👋
+                    </div>
+                    <div>
+                        <div style="font-size:16px;font-weight:700;color:var(--ink-900);margin-bottom:4px;">No guests yet</div>
+                        <div style="font-size:13px;color:var(--ink-500);max-width:260px;line-height:1.4;">Invite friends and family to see who's coming to your picnic.</div>
+                    </div>
+                    <button type="button" id="invite-first-guest" class="pp-cta" style="margin-top:6px;max-width:240px;">
+                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                        Invite your first guest
+                    </button>
+                </div>`;
+            setTimeout(() => {
+                const btn = card.querySelector('#invite-first-guest');
+                btn?.addEventListener('click', async () => {
+                    const url = window.location.href;
+                    try {
+                        if (navigator.share) {
+                            await navigator.share({ title: 'Join my picnic', url });
+                        } else {
+                            await navigator.clipboard.writeText(url);
+                            btn.textContent = '✓ Link copied!';
+                            setTimeout(() => { btn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg> Invite your first guest`; }, 1800);
+                        }
+                    } catch (_) {}
+                });
+            }, 0);
         } else {
             participants.forEach((p, idx) => {
                 const isMe = state.currentUser && p.id === state.currentUser.id;
