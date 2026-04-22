@@ -1,12 +1,16 @@
 // Results list rendered in the sidebar after Find Amenity Clusters succeeds.
 import { amenityDefinitions, amenityGroupDefinitions } from '../utils/amenities.js';
 import { calculateDistance } from '../utils/conditions.js';
+import { t, tp } from '../i18n.js';
 
 const pickName = (cluster) => {
     for (const it of cluster.items) {
         if (it.tags?.name) return it.tags.name;
     }
-    return `Picnic spot · ${cluster.center[0].toFixed(4)}, ${cluster.center[1].toFixed(4)}`;
+    return t('spot.fallback_name', {
+        lat: cluster.center[0].toFixed(4),
+        lon: cluster.center[1].toFixed(4)
+    });
 };
 
 const matchedCount = (cluster, selectedKeys) => {
@@ -30,7 +34,10 @@ const iconRow = (cluster, selectedKeys) => {
         const emoji = group
             ? (amenityDefinitions[group.includes[0]]?.emoji || '✓')
             : (def?.emoji || '✓');
-        return `<span class="pp-result-ico ${matched ? 'on' : 'off'}" title="${group?.title || def?.title || key}">${emoji}</span>`;
+        const title = group
+            ? t(`group.${key.replace(/_group$/, '')}_full`)
+            : (def ? t(`amenity.${key}`) : key);
+        return `<span class="pp-result-ico ${matched ? 'on' : 'off'}" title="${title}">${emoji}</span>`;
     });
     return `<div class="pp-result-icons">${icons.join('')}</div>`;
 };
@@ -55,13 +62,13 @@ export const updateResults = (clusters, ctx = {}) => {
     _container.classList.add('has-results');
     _container.innerHTML = `
         <div class="pp-results-head">
-            <span>${clusters.length} spot${clusters.length === 1 ? '' : 's'} found</span>
+            <span>${tp('results.spots_found', clusters.length)}</span>
         </div>
         <div class="pp-results-list">
             ${clusters.map((c, i) => {
                 const score = matchedCount(c, selectedAmenities);
                 const dist = mapCenter
-                    ? `${Math.round(calculateDistance(mapCenter[0], mapCenter[1], c.center[0], c.center[1]))}m away`
+                    ? t('results.distance_away', { n: Math.round(calculateDistance(mapCenter[0], mapCenter[1], c.center[0], c.center[1])) })
                     : '';
                 return `<button type="button" class="pp-result-card" data-idx="${i}">
                     <div class="pp-result-row1">

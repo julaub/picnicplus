@@ -2,6 +2,7 @@
 // pin or results-list card is selected. Single shared instance.
 import { amenityDefinitions, amenityGroupDefinitions } from '../utils/amenities.js';
 import { calculateDistance, conditionDefinitions } from '../utils/conditions.js';
+import { t, tp } from '../i18n.js';
 
 let _root = null;
 let _api = null;
@@ -14,7 +15,10 @@ const pickClusterName = (cluster) => {
         if (it.tags?.name) return it.tags.name;
     }
     // Fall back to a friendly coord-derived label.
-    return `Picnic spot · ${cluster.center[0].toFixed(4)}, ${cluster.center[1].toFixed(4)}`;
+    return t('spot.fallback_name', {
+        lat: cluster.center[0].toFixed(4),
+        lon: cluster.center[1].toFixed(4)
+    });
 };
 
 const buildAmenityChips = (cluster, selectedKeys) => {
@@ -23,7 +27,9 @@ const buildAmenityChips = (cluster, selectedKeys) => {
     const chips = selectedKeys.map(key => {
         const group = amenityGroupDefinitions[key];
         const def = amenityDefinitions[key];
-        const title = group?.title || def?.title || key;
+        const title = group
+            ? t(`group.${key.replace(/_group$/, '')}_full`)
+            : (def ? t(`amenity.${key}`) : key);
         const emoji = def?.emoji || '✓';
         // matched if any of the cluster's types satisfy this selection
         const matched = group
@@ -39,8 +45,7 @@ const buildAmenityChips = (cluster, selectedKeys) => {
 const buildProximityRows = (cluster, conditions) => {
     if (!conditions || !conditions.length) return '';
     const rows = conditions.map(cond => {
-        const def = conditionDefinitions[cond.type];
-        const title = def?.title || cond.type;
+        const title = conditionDefinitions[cond.type] ? t(`condition.${cond.type}`) : cond.type;
         // We don't know the exact distance to the matched element — clusters
         // were filtered to satisfy ≤ cond.distance, so report the bound.
         return `<div class="pp-spot-prox">
@@ -57,19 +62,21 @@ const render = (cluster, ctx = {}) => {
     const { selectedAmenities = [], conditions = [], mapCenter = null } = ctx;
     const name = pickClusterName(cluster);
     const distFromCenter = mapCenter
-        ? `${Math.round(calculateDistance(mapCenter[0], mapCenter[1], cluster.center[0], cluster.center[1]))}m from map center`
+        ? t('spot.distance_from_center', { n: Math.round(calculateDistance(mapCenter[0], mapCenter[1], cluster.center[0], cluster.center[1])) })
         : '';
     const itemCount = cluster.items.length;
+    const metaParts = [tp('spot.amenities', itemCount)];
+    if (distFromCenter) metaParts.push(distFromCenter);
 
     _root.querySelector('.pp-spot-content').innerHTML = `
         <div class="pp-spot-handle" aria-hidden="true"></div>
         <div class="pp-spot-head">
             <div>
-                <div class="pp-spot-eyebrow">Spot detail</div>
+                <div class="pp-spot-eyebrow">${t('spot.eyebrow')}</div>
                 <h3 class="pp-spot-title">${name}</h3>
-                <div class="pp-spot-meta">${itemCount} amenit${itemCount === 1 ? 'y' : 'ies'} · ${distFromCenter}</div>
+                <div class="pp-spot-meta">${metaParts.join(' · ')}</div>
             </div>
-            <button type="button" class="pp-spot-close" aria-label="Close">
+            <button type="button" class="pp-spot-close" aria-label="${t('spot.close_aria')}">
                 <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
         </div>
@@ -77,12 +84,12 @@ const render = (cluster, ctx = {}) => {
         ${buildProximityRows(cluster, conditions)}
         <div class="pp-spot-actions">
             <button type="button" class="pp-cta" id="pp-spot-use">
-                Use this spot for my event
+                ${t('spot.use_for_event')}
                 <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-left:6px"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </button>
             <a class="pp-link-btn pp-spot-directions" id="pp-spot-directions"
                href="https://www.openstreetmap.org/directions?to=${cluster.center[0]},${cluster.center[1]}"
-               target="_blank" rel="noopener">Get directions ↗</a>
+               target="_blank" rel="noopener">${t('spot.directions')}</a>
         </div>
     `;
 

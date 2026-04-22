@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="description"
         content="Find the perfect event spot with specific amenities like fire pits, water, and shelter.">
-    <title>Event Finder | Discover Perfect Spots</title>
+    <title data-i18n="app.title">Event Finder | Discover Perfect Spots</title>
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -35,12 +35,19 @@
                 <div class="pp-side-scroll" id="sidebar-content">
                     <div class="pp-side-header">
                         <div>
-                            <div class="pp-eyebrow">Spot Finder</div>
-                            <div class="pp-side-title">Find your perfect picnic</div>
+                            <div class="pp-eyebrow" data-i18n="sidebar.eyebrow">Spot Finder</div>
+                            <div class="pp-side-title" data-i18n="sidebar.title">Find your perfect picnic</div>
                         </div>
-                        <button id="mobile-toggle" class="pp-side-iconbtn" aria-label="Close">
-                            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                        </button>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <button id="lang-toggle" class="pp-lang-btn" type="button" aria-label="Language" aria-haspopup="true" aria-expanded="false">
+                                <span class="pp-lang-flag" id="lang-current-flag">🇬🇧</span>
+                                <span class="pp-lang-code" id="lang-current-code">EN</span>
+                                <svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                            </button>
+                            <button id="mobile-toggle" class="pp-side-iconbtn" aria-label="Close" data-i18n-attr="aria-label:sidebar.close">
+                                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Search pill -->
@@ -48,11 +55,11 @@
                         <span style="color:var(--ink-500);display:flex;align-items:center;">
                             <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                         </span>
-                        <input type="text" id="location-input" placeholder="Search city, address, or park" aria-label="Location search input">
-                        <button id="my-location-button" aria-label="My Location" style="background:transparent;border:none;color:var(--green-700);display:flex;align-items:center;cursor:pointer;padding:4px;">
+                        <input type="text" id="location-input" placeholder="Search city, address, or park" aria-label="Location search input" data-i18n-attr="placeholder:search.placeholder,aria-label:search.aria">
+                        <button id="my-location-button" aria-label="My Location" data-i18n-attr="aria-label:search.my_location" style="background:transparent;border:none;color:var(--green-700);display:flex;align-items:center;cursor:pointer;padding:4px;">
                             <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
                         </button>
-                        <button id="search-button" aria-label="Search" style="background:var(--green-700);color:#fff;border:none;width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
+                        <button id="search-button" aria-label="Search" data-i18n-attr="aria-label:search.btn_aria" style="background:var(--green-700);color:#fff;border:none;width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;">
                             <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                         </button>
                     </div>
@@ -60,7 +67,7 @@
                     <!-- Step 2: Amenities -->
                     <div class="pp-section-label">
                         <span class="pp-step-num">2</span>
-                        <span class="pp-section-title">Must-have amenities</span>
+                        <span class="pp-section-title" data-i18n="section.amenities">Must-have amenities</span>
                         <span class="pp-section-hint" id="amenity-count">0 selected</span>
                     </div>
                     <div id="amenity-section" class="pp-amenity-grid">
@@ -70,10 +77,10 @@
                     <!-- Step 3: Proximity filters -->
                     <div class="pp-section-label">
                         <span class="pp-step-num">3</span>
-                        <span class="pp-section-title">Proximity filters</span>
-                        <button type="button" id="prox-logic-toggle" class="pp-logic-pill" aria-pressed="true" title="Toggle AND / OR logic">
+                        <span class="pp-section-title" data-i18n="section.proximity">Proximity filters</span>
+                        <button type="button" id="prox-logic-toggle" class="pp-logic-pill" aria-pressed="true" title="Toggle AND / OR logic" data-i18n-attr="title:proximity.logic_title">
                             <span class="pp-logic-label">AND</span>
-                            <span class="pp-logic-swap">logic</span>
+                            <span class="pp-logic-swap" data-i18n="proximity.logic_swap">logic</span>
                         </button>
                     </div>
                     <div id="added-conditions-list" style="padding:0 16px;"></div>
@@ -81,7 +88,7 @@
                         <span style="width:28px;height:28px;border-radius:10px;background:var(--green-50);color:var(--green-700);display:inline-flex;align-items:center;justify-content:center;">
                             <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         </span>
-                        Add proximity filter
+                        <span data-i18n="proximity.add">Add proximity filter</span>
                     </button>
                     <select id="condition-type" style="display:none;">
                         <option value="bus_stop">Bus Stop</option>
@@ -94,11 +101,11 @@
                     <!-- Step 4: Options -->
                     <div class="pp-section-label">
                         <span class="pp-step-num">4</span>
-                        <span class="pp-section-title">Search options</span>
+                        <span class="pp-section-title" data-i18n="section.options">Search options</span>
                     </div>
                     <div class="pp-card" style="margin-top:0;">
                         <div class="pp-slider-row">
-                            <div class="pp-slider-label">Cluster tracking radius</div>
+                            <div class="pp-slider-label" data-i18n="options.cluster_radius">Cluster tracking radius</div>
                             <div class="pp-slider-value"><span id="distance-value">100</span>m</div>
                         </div>
                         <input type="range" id="distance-slider" min="20" max="500" value="100" step="10" class="pp-slider">
@@ -108,8 +115,8 @@
                     </div>
                     <div class="pp-row-toggle" id="require-all-toggle-row">
                         <div class="body">
-                            <div class="label">Require 1+ from EACH group</div>
-                            <div class="hint">Stricter match across all selected amenities</div>
+                            <div class="label" data-i18n="options.require_each">Require 1+ from EACH group</div>
+                            <div class="hint" data-i18n="options.require_each_hint">Stricter match across all selected amenities</div>
                         </div>
                         <div class="pp-toggle" id="require-all-toggle"></div>
                         <input type="checkbox" id="require-all-groups-checkbox" style="display:none;">
@@ -128,11 +135,11 @@
                     <div style="padding: 16px 16px 6px;">
                         <button id="find-button" type="button" class="pp-cta">
                             <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                            Find Amenity Clusters
+                            <span data-i18n="cta.find_clusters">Find Amenity Clusters</span>
                         </button>
                     </div>
                     <div style="padding: 0 16px 16px; text-align: center;">
-                        <button id="reset-all-filters" type="button" class="pp-link-btn">Reset all filters</button>
+                        <button id="reset-all-filters" type="button" class="pp-link-btn" data-i18n="cta.reset_all">Reset all filters</button>
                     </div>
                 </div>
             </aside>
@@ -143,12 +150,12 @@
 
             <!-- Desktop collapse handle on the sidebar's right edge. Hidden on
                  mobile where the bottom-sheet pattern + 🔍 nav item apply. -->
-            <button id="sidebar-collapse" class="pp-side-handle" type="button" aria-label="Collapse filters">
+            <button id="sidebar-collapse" class="pp-side-handle" type="button" aria-label="Collapse filters" data-i18n-attr="aria-label:sidebar.collapse">
                 <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
 
             <!-- Floating re-open FAB, shown only on desktop when sidebar is collapsed. -->
-            <button id="sidebar-reopen" class="pp-side-fab" type="button" aria-label="Open filters">
+            <button id="sidebar-reopen" class="pp-side-fab" type="button" aria-label="Open filters" data-i18n-attr="aria-label:sidebar.reopen">
                 <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             </button>
         </main>
@@ -184,25 +191,25 @@
         <nav class="pp-nav">
             <button class="pp-nav-item" id="nav-btn-picnic" data-target="view-picnic" style="display: none;">
                 <div class="pp-nav-icon-wrap">🎉</div>
-                <span>Event</span>
+                <span data-i18n="nav.event">Event</span>
             </button>
             <button class="pp-nav-item active" data-target="view-map">
                 <div class="pp-nav-icon-wrap">🗺️</div>
-                <span>Map</span>
+                <span data-i18n="nav.map">Map</span>
             </button>
             <button class="pp-nav-item" data-target="view-participants">
                 <div class="pp-nav-icon-wrap">👥</div>
-                <span>Guests</span>
+                <span data-i18n="nav.guests">Guests</span>
             </button>
             <button class="pp-nav-item" data-target="view-potluck">
                 <div class="pp-nav-icon-wrap">🍱</div>
-                <span>Items</span>
+                <span data-i18n="nav.items">Items</span>
             </button>
-            <button class="pp-nav-item" id="nav-btn-find" type="button" aria-label="Find amenities">
+            <button class="pp-nav-item" id="nav-btn-find" type="button" aria-label="Find amenities" data-i18n-attr="aria-label:nav.find_aria">
                 <div class="pp-nav-icon-wrap">
                     <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 </div>
-                <span>Find</span>
+                <span data-i18n="nav.find">Find</span>
             </button>
         </nav>
 
@@ -210,21 +217,21 @@
         <div id="date-picker-modal" class="apple-modal-overlay hidden">
             <div class="apple-modal glass-panel">
                 <div class="apple-modal-header">
-                    <h3 id="date-picker-title">Select Date & Time</h3>
+                    <h3 id="date-picker-title" data-i18n="datepicker.title">Select Date & Time</h3>
                 </div>
                 <div class="apple-modal-body">
                     <div class="apple-input-group">
-                        <label for="apple-date-input">Date</label>
+                        <label for="apple-date-input" data-i18n="datepicker.date">Date</label>
                         <input type="date" id="apple-date-input" class="apple-native-input">
                     </div>
                     <div class="apple-input-group">
-                        <label for="apple-time-input">Time</label>
+                        <label for="apple-time-input" data-i18n="datepicker.time">Time</label>
                         <input type="time" id="apple-time-input" class="apple-native-input">
                     </div>
                 </div>
                 <div class="apple-modal-footer">
-                    <button id="date-picker-cancel" class="btn-secondary apple-btn">Cancel</button>
-                    <button id="date-picker-confirm" class="btn-primary apple-btn">Confirm</button>
+                    <button id="date-picker-cancel" class="btn-secondary apple-btn" data-i18n="datepicker.cancel">Cancel</button>
+                    <button id="date-picker-confirm" class="btn-primary apple-btn" data-i18n="datepicker.confirm">Confirm</button>
                 </div>
             </div>
         </div>

@@ -953,6 +953,58 @@ details[open] summary { border-bottom: 1px solid rgba(20,22,19,0.06); color: var
 .pp-section-title { font-size: 14px; font-weight: 600; color: var(--ink-800); letter-spacing: -0.01em; }
 .pp-section-hint { font-size: 12px; color: var(--ink-500); font-weight: 500; margin-left: auto; }
 
+/* Language picker (flag pill in sidebar header) */
+.pp-lang-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 32px; padding: 0 10px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid rgba(20,22,19,0.08);
+    color: var(--ink-700);
+    font-size: 12px; font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: var(--shadow-1);
+    transition: transform 0.12s ease, background 0.18s ease;
+}
+.pp-lang-btn:hover { transform: translateY(-1px); background: var(--ink-50, #F5F2EC); }
+.pp-lang-btn .pp-lang-flag { font-size: 15px; line-height: 1; }
+.pp-lang-btn .pp-lang-code { letter-spacing: 0.05em; }
+
+.pp-lang-pop {
+    position: absolute;
+    z-index: 1300;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: var(--shadow-2, 0 10px 30px rgba(20,22,19,0.18));
+    border: 1px solid rgba(20,22,19,0.08);
+    padding: 6px;
+    min-width: 160px;
+    display: flex; flex-direction: column;
+    animation: pp-pop-in 0.18s ease;
+}
+@keyframes pp-pop-in {
+    from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+.pp-lang-pop button {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: transparent;
+    border: none;
+    color: var(--ink-900);
+    font-size: 13px; font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.12s ease;
+}
+.pp-lang-pop button:hover { background: var(--green-50, #E6F3EC); }
+.pp-lang-pop button.is-active { background: var(--green-50, #E6F3EC); color: var(--green-700); }
+.pp-lang-pop button .pp-lang-flag { font-size: 18px; }
+.pp-lang-pop button .pp-lang-check { margin-left: auto; color: var(--green-700); font-weight: 800; }
+
 /* AND / OR logic toggle pill (proximity filters section) */
 .pp-logic-pill {
     margin-left: auto;

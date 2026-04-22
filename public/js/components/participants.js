@@ -1,9 +1,10 @@
 // js/components/participants.js
 import { state } from '../state.js';
+import { t } from '../i18n.js';
 
 const AVATAR_COLORS = ['#0E7A4D','#E76A2C','#8E5CC2','#1F6FB8','#C94A3A','#0A5A3A','#B88515','#4F6B8A','#D9527E'];
 const RSVP_CYCLE = ['going', 'maybe', 'declined', 'pending'];
-const RSVP_LABELS = { going: 'Going', maybe: 'Maybe', declined: 'Declined', pending: 'Invited' };
+const rsvpLabel = (k) => t(`rsvp.${k}`);
 
 const rsvpState = new Map(); // participantId → rsvp status
 
@@ -23,9 +24,9 @@ export const initParticipants = (containerId) => {
         header.innerHTML = `
             <div class="pp-header-row">
                 <div>
-                    <div class="pp-subtitle" style="color:var(--green-700);text-transform:uppercase;letter-spacing:.06em;font-size:11px;font-weight:700;">Who's Coming</div>
-                    <h1 class="pp-title">Guest list</h1>
-                    <div class="pp-subtitle" style="margin-top:4px;">Tap a status pill to cycle it</div>
+                    <div class="pp-subtitle" style="color:var(--green-700);text-transform:uppercase;letter-spacing:.06em;font-size:11px;font-weight:700;">${t('guests.eyebrow')}</div>
+                    <h1 class="pp-title">${t('guests.title')}</h1>
+                    <div class="pp-subtitle" style="margin-top:4px;">${t('guests.subtitle')}</div>
                 </div>
             </div>`;
         container.appendChild(header);
@@ -54,7 +55,8 @@ export const initParticipants = (containerId) => {
 
         const countText = document.createElement('div');
         countText.style.cssText = 'font-size:13px;color:var(--ink-700);font-weight:500;';
-        countText.innerHTML = `<b style="color:var(--ink-900)">${counts.going}</b> going · <b style="color:var(--ink-900)">${counts.maybe}</b> maybe · <b style="color:var(--ink-900)">${counts.pending}</b> pending`;
+        const fmtSummary = (c) => `<b style="color:var(--ink-900)">${c.going}</b> ${t('guests.summary_going')} · <b style="color:var(--ink-900)">${c.maybe}</b> ${t('guests.summary_maybe')} · <b style="color:var(--ink-900)">${c.pending}</b> ${t('guests.summary_pending')}`;
+        countText.innerHTML = fmtSummary(counts);
 
         stackWrap.appendChild(avatarRow);
         stackWrap.appendChild(countText);
@@ -72,12 +74,12 @@ export const initParticipants = (containerId) => {
                         👋
                     </div>
                     <div>
-                        <div style="font-size:16px;font-weight:700;color:var(--ink-900);margin-bottom:4px;">No guests yet</div>
-                        <div style="font-size:13px;color:var(--ink-500);max-width:260px;line-height:1.4;">Invite friends and family to see who's coming to your picnic.</div>
+                        <div style="font-size:16px;font-weight:700;color:var(--ink-900);margin-bottom:4px;">${t('guests.empty_title')}</div>
+                        <div style="font-size:13px;color:var(--ink-500);max-width:260px;line-height:1.4;">${t('guests.empty_body')}</div>
                     </div>
                     <button type="button" id="invite-first-guest" class="pp-cta" style="margin-top:6px;max-width:240px;">
                         <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-                        Invite your first guest
+                        ${t('guests.invite_first')}
                     </button>
                 </div>`;
             setTimeout(() => {
@@ -86,11 +88,11 @@ export const initParticipants = (containerId) => {
                     const url = window.location.href;
                     try {
                         if (navigator.share) {
-                            await navigator.share({ title: 'Join my picnic', url });
+                            await navigator.share({ title: t('event.share_title'), url });
                         } else {
                             await navigator.clipboard.writeText(url);
-                            btn.textContent = '✓ Link copied!';
-                            setTimeout(() => { btn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg> Invite your first guest`; }, 1800);
+                            btn.textContent = t('guests.link_copied');
+                            setTimeout(() => { btn.innerHTML = `<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg> ${t('guests.invite_first')}`; }, 1800);
                         }
                     } catch (_) {}
                 });
@@ -115,19 +117,19 @@ export const initParticipants = (containerId) => {
                 const body = document.createElement('div');
                 body.className = 'pp-guest-body';
                 body.innerHTML = `
-                    <div class="pp-guest-name">${p.name}${isMe ? ' <span style="font-size:11px;color:var(--ink-400);font-weight:500;">(You)</span>' : ''}</div>
-                    <div class="pp-guest-handle">${p.role === 'organizer' ? '👑 Organizer' : '@' + p.name.toLowerCase().replace(/\s+/g, '')}</div>`;
+                    <div class="pp-guest-name">${p.name}${isMe ? ` <span style="font-size:11px;color:var(--ink-400);font-weight:500;">${t('guests.you_suffix')}</span>` : ''}</div>
+                    <div class="pp-guest-handle">${p.role === 'organizer' ? t('guests.organizer') : '@' + p.name.toLowerCase().replace(/\s+/g, '')}</div>`;
 
                 const rsvpStatus = rsvpState.get(p.id);
                 const pill = document.createElement('button');
                 pill.className = `pp-rsvp ${rsvpStatus}`;
-                pill.textContent = RSVP_LABELS[rsvpStatus];
+                pill.textContent = rsvpLabel(rsvpStatus);
                 pill.addEventListener('click', () => {
                     const curr = rsvpState.get(p.id);
                     const next = RSVP_CYCLE[(RSVP_CYCLE.indexOf(curr) + 1) % RSVP_CYCLE.length];
                     rsvpState.set(p.id, next);
                     pill.className = `pp-rsvp ${next}`;
-                    pill.textContent = RSVP_LABELS[next];
+                    pill.textContent = rsvpLabel(next);
                     // update summary counts
                     const newCounts = { going: 0, maybe: 0, pending: 0 };
                     participants.forEach(q => {
@@ -136,7 +138,7 @@ export const initParticipants = (containerId) => {
                         else if (rs === 'maybe') newCounts.maybe++;
                         else newCounts.pending++;
                     });
-                    countText.innerHTML = `<b style="color:var(--ink-900)">${newCounts.going}</b> going · <b style="color:var(--ink-900)">${newCounts.maybe}</b> maybe · <b style="color:var(--ink-900)">${newCounts.pending}</b> pending`;
+                    countText.innerHTML = fmtSummary(newCounts);
                 });
 
                 row.appendChild(av);
@@ -153,14 +155,15 @@ export const initParticipants = (containerId) => {
         const cta = document.createElement('button');
         cta.className = 'pp-cta secondary';
         cta.style.position = 'static';
-        cta.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg> Invite guests`;
+        const ctaIconHTML = `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>`;
+        cta.innerHTML = `${ctaIconHTML} ${t('guests.invite_cta')}`;
         cta.addEventListener('click', () => {
             if (state.picnicId) {
                 const url = `${window.location.origin}${window.location.pathname}#picnic=${state.picnicId}`;
-                if (navigator.share) navigator.share({ title: 'Join my picnic!', url });
+                if (navigator.share) navigator.share({ title: t('guests.share_title'), url });
                 else navigator.clipboard.writeText(url).then(() => {
-                    cta.textContent = 'Link copied!';
-                    setTimeout(() => { cta.innerHTML = `<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg> Invite guests`; }, 2000);
+                    cta.textContent = t('event.link_copied');
+                    setTimeout(() => { cta.innerHTML = `${ctaIconHTML} ${t('guests.invite_cta')}`; }, 2000);
                 });
             } else {
                 document.querySelector('.pp-nav-item[data-target="view-map"]')?.click();
@@ -179,4 +182,5 @@ export const initParticipants = (containerId) => {
     window.addEventListener('stateUpdated', (e) => {
         if (e.detail.topic === 'participants' || e.detail.topic === 'all') render();
     });
+    window.addEventListener('localeChange', render);
 };

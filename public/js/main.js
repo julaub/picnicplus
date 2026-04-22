@@ -1,5 +1,6 @@
 import { uiSections, amenityDefinitions, amenityGroupDefinitions } from './utils/amenities.js';
 import { conditionDefinitions } from './utils/conditions.js';
+import { t, tp, getLocale, setLocale, LOCALES, applyDomTranslations, onLocaleChange } from './i18n.js';
 import { searchLocation } from './api/search.js';
 import { buildOverpassQuery, fetchAmenities, clusterAmenities, filterByConditions } from './api/overpass.js';
 import { initializeMap, renderClusters, selectClusterPin, focusCluster } from './components/map.js';
@@ -13,6 +14,9 @@ import { checkUrlForPicnic, createPicnic, joinPicnic, state } from './state.js';
 import { requestDateAndTime } from './components/date-picker.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Apply translations to all static [data-i18n] markup before any JS render.
+    applyDomTranslations(document);
+
     // UI Elements
     const elements = {
         locationInput: document.getElementById('location-input'),
@@ -88,7 +92,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         elements.statusBox.innerHTML = `
             <span class="status-icon">${icon}</span>
             <span class="status-text">${text}</span>
-            ${type === 'empty' ? '<button type="button" class="pp-link-btn" id="status-reset-link">Reset filters</button>' : ''}
+            ${type === 'empty' ? `<button type="button" class="pp-link-btn" id="status-reset-link">${t('status.reset_link')}</button>` : ''}
         `;
         // Re-cache references that may be re-queried elsewhere.
         elements.statusIcon = elements.statusBox.querySelector('.status-icon');
@@ -108,16 +112,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('require-all-toggle')?.classList.remove('on');
         }
         updateAmenityCount();
-        updateStatus("Filters cleared. Pick amenities and tap Find.", "neutral");
+        updateStatus(t('status.cleared'), "neutral");
     };
 
     const updateAmenityCount = () => {
         const n = document.querySelectorAll('.amenity-cb:checked').length;
         const el = document.getElementById('amenity-count');
-        if (el) el.textContent = `${n} selected`;
+        if (el) el.textContent = t('amenity.count_selected', { n });
     };
 
+    // Map a group id (e.g. "fire_place_group") to its short i18n key ("group.fire_place").
+    const groupShortKey = (id) => `group.${id.replace(/_group$/, '')}`;
+
     const buildAmenitiesUI = () => {
+        // Preserve current selections across rebuilds (e.g. on language change).
+        const previouslyChecked = new Set(
+            Array.from(document.querySelectorAll('.amenity-cb:checked')).map(cb => cb.id.replace('-checkbox', ''))
+        );
+
         const items = [];
         uiSections.forEach(section => {
             section.items.forEach(item => {
@@ -125,11 +137,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const g = amenityGroupDefinitions[item.id];
                     if (!g) return;
                     const firstEmoji = amenityDefinitions[g.includes[0]]?.emoji || '📍';
-                    items.push({ id: item.id, title: g.title.replace(/ \(Any\)$/, ''), emoji: firstEmoji, defaultOn: ['fire_place_group','water_source_group'].includes(item.id) });
+                    const defaultOn = ['fire_place_group','water_source_group'].includes(item.id);
+                    items.push({
+                        id: item.id,
+                        title: t(groupShortKey(item.id)),
+                        emoji: firstEmoji,
+                        defaultOn: previouslyChecked.size ? previouslyChecked.has(item.id) : defaultOn
+                    });
                 } else {
                     const a = amenityDefinitions[item.id];
                     if (!a) return;
-                    items.push({ id: item.id, title: a.title, emoji: a.emoji, defaultOn: false });
+                    items.push({
+                        id: item.id,
+                        title: t(`amenity.${item.id}`),
+                        emoji: a.emoji,
+                        defaultOn: previouslyChecked.has(item.id)
+                    });
                 }
             });
         });
@@ -170,7 +193,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             div.innerHTML = `
                 <div class="pp-filter-icon">${PROX_EMOJI[cond.type] || '📍'}</div>
                 <div class="pp-filter-body">
-                    <div class="pp-filter-name">${def.title}</div>
+                    <div class="pp-filter-name">${t(`condition.${cond.type}`)}</div>
                     <div class="pp-filter-meta">
                         <div class="pp-stepper">
                             <button type="button" data-act="dec">−</button>
@@ -179,7 +202,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         </div>
                     </div>
                 </div>
-                <button type="button" class="pp-remove" aria-label="Remove">
+                <button type="button" class="pp-remove" aria-label="${t('proximity.remove_aria')}">
                     <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
                 </button>
             `;
@@ -209,11 +232,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (e) e.preventDefault();
 
         if (!navigator.geolocation) {
-            updateStatus('Geolocation is not supported by your browser.', 'error');
+            updateStatus(t('status.geolocation_unsupported'), 'error');
             return;
         }
 
-        updateStatus('Finding your location...', 'loading');
+        updateStatus(t('status.finding_location'), 'loading');
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 const lat = position.coords.latitude;
@@ -232,14 +255,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                 L.marker([lat, lon], { icon: userIcon }).addTo(mapState.userMarkerLayer);
 
                 // Fill input with "My Location"
-                elements.locationInput.value = "My Location";
+                elements.locationInput.value = t('search.my_location');
 
-                updateStatus('Found your location.', 'success');
+                updateStatus(t('status.found_location'), 'success');
             },
             (error) => {
-                let errorMessage = 'Unable to retrieve your location.';
+                let errorMessage = t('status.location_unavailable');
                 if (error.code === error.PERMISSION_DENIED) {
-                    errorMessage = 'Location access denied by user.';
+                    errorMessage = t('status.location_denied');
                 }
                 updateStatus(errorMessage, 'error');
                 console.error('Geolocation error:', error);
@@ -268,24 +291,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         const used = new Set(addedConditions.map(c => c.type));
         const available = PROX_ALL_TYPES.filter(t => !used.has(t));
         if (!available.length) {
-            updateStatus('All proximity filters are already added.', 'neutral');
+            updateStatus(t('proximity.all_added'), 'neutral');
             return;
         }
         const modal = document.createElement('div');
         modal.className = 'pp-modal-scrim';
         modal.innerHTML = `
-            <div class="pp-modal-sheet" role="dialog" aria-label="Add proximity filter">
+            <div class="pp-modal-sheet" role="dialog" aria-label="${t('proximity.modal_title')}">
                 <div class="pp-modal-handle" aria-hidden="true"></div>
-                <div class="pp-modal-title">Add proximity filter</div>
+                <div class="pp-modal-title">${t('proximity.modal_title')}</div>
                 <div class="pp-modal-grid">
-                    ${available.map(t => `
-                        <button type="button" class="pp-modal-card" data-type="${t}">
-                            <span class="pp-modal-emoji">${PROX_EMOJI[t] || '📍'}</span>
-                            <span class="pp-modal-label">${conditionDefinitions[t].title}</span>
+                    ${available.map(typ => `
+                        <button type="button" class="pp-modal-card" data-type="${typ}">
+                            <span class="pp-modal-emoji">${PROX_EMOJI[typ] || '📍'}</span>
+                            <span class="pp-modal-label">${t(`condition.${typ}`)}</span>
                         </button>
                     `).join('')}
                 </div>
-                <button type="button" class="pp-link-btn pp-modal-cancel">Cancel</button>
+                <button type="button" class="pp-link-btn pp-modal-cancel">${t('proximity.cancel')}</button>
             </div>
         `;
         document.body.appendChild(modal);
@@ -348,11 +371,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Proximity logic toggle (AND ↔ OR).
     const proxLogicBtn = document.getElementById('prox-logic-toggle');
-    proxLogicBtn?.addEventListener('click', () => {
-        proxLogicMode = proxLogicMode === 'AND' ? 'OR' : 'AND';
-        proxLogicBtn.querySelector('.pp-logic-label').textContent = proxLogicMode;
+    const syncProxLogicLabel = () => {
+        if (!proxLogicBtn) return;
+        proxLogicBtn.querySelector('.pp-logic-label').textContent =
+            t(proxLogicMode === 'AND' ? 'proximity.logic_and' : 'proximity.logic_or');
         proxLogicBtn.setAttribute('aria-pressed', String(proxLogicMode === 'AND'));
         proxLogicBtn.classList.toggle('is-or', proxLogicMode === 'OR');
+    };
+    syncProxLogicLabel();
+    proxLogicBtn?.addEventListener('click', () => {
+        proxLogicMode = proxLogicMode === 'AND' ? 'OR' : 'AND';
+        syncProxLogicLabel();
     });
 
     // Desktop sidebar collapse handle + reopen FAB, with localStorage persistence.
@@ -373,6 +402,76 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('sidebar-reopen')?.addEventListener('click', () => {
         elements.sidebar.classList.remove('closed');
         try { localStorage.setItem(SIDEBAR_COLLAPSED_KEY, '0'); } catch (_) {}
+    });
+
+    // ── Language picker ──
+    const langBtn = document.getElementById('lang-toggle');
+    const langFlagEl = document.getElementById('lang-current-flag');
+    const langCodeEl = document.getElementById('lang-current-code');
+    let langPop = null;
+
+    const syncLangButton = () => {
+        const code = getLocale();
+        const meta = LOCALES[code];
+        if (langFlagEl) langFlagEl.textContent = meta.flag;
+        if (langCodeEl) langCodeEl.textContent = code.toUpperCase();
+    };
+
+    const closeLangPop = () => {
+        if (!langPop) return;
+        langPop.remove();
+        langPop = null;
+        langBtn?.setAttribute('aria-expanded', 'false');
+        document.removeEventListener('click', onDocClickClosePop, true);
+    };
+    function onDocClickClosePop(e) {
+        if (langPop && !langPop.contains(e.target) && e.target !== langBtn && !langBtn.contains(e.target)) {
+            closeLangPop();
+        }
+    }
+    const openLangPop = () => {
+        if (langPop) { closeLangPop(); return; }
+        langPop = document.createElement('div');
+        langPop.className = 'pp-lang-pop';
+        langPop.innerHTML = Object.entries(LOCALES).map(([code, meta]) => `
+            <button type="button" data-code="${code}" class="${code === getLocale() ? 'is-active' : ''}">
+                <span class="pp-lang-flag">${meta.flag}</span>
+                <span>${meta.name}</span>
+                ${code === getLocale() ? '<span class="pp-lang-check">✓</span>' : ''}
+            </button>
+        `).join('');
+        document.body.appendChild(langPop);
+        const r = langBtn.getBoundingClientRect();
+        // Position below the button, right-aligned to it.
+        langPop.style.top = `${r.bottom + 6 + window.scrollY}px`;
+        langPop.style.left = `${Math.max(8, r.right - langPop.offsetWidth + window.scrollX)}px`;
+        langBtn.setAttribute('aria-expanded', 'true');
+        langPop.querySelectorAll('button[data-code]').forEach(b => {
+            b.addEventListener('click', () => {
+                setLocale(b.dataset.code);
+                closeLangPop();
+            });
+        });
+        // Defer to avoid the same click closing it.
+        setTimeout(() => document.addEventListener('click', onDocClickClosePop, true), 0);
+    };
+    langBtn?.addEventListener('click', (e) => { e.stopPropagation(); openLangPop(); });
+    syncLangButton();
+
+    // When the locale changes, re-translate static DOM and refresh dynamic UIs.
+    onLocaleChange(() => {
+        applyDomTranslations(document);
+        syncLangButton();
+        syncProxLogicLabel();
+        // Refresh the find-button label cache, then rebuild dynamic widgets.
+        elements.findButton.innerHTML = `
+            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span data-i18n="cta.find_clusters">${t('cta.find_clusters')}</span>`;
+        findBtnDefaultHTML = elements.findButton.innerHTML;
+        buildAmenitiesUI();
+        renderAddedConditions();
+        // Re-emit a stateUpdated so component renders pick up the new locale.
+        window.dispatchEvent(new CustomEvent('stateUpdated', { detail: { topic: 'all' } }));
     });
 
     // Bottom-nav 🔍 Find: switches to Map view, opens the sidebar if closed,
@@ -398,13 +497,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!state.picnicId) {
             const popupContent = `
                 <div class="popup-inner">
-                    <h4 style="margin: 0 0 5px 0;">Create an Event Here?</h4>
+                    <h4 style="margin: 0 0 5px 0;">${t('map.create_here_title')}</h4>
                     <p style="color:var(--text-muted); font-size:12px; margin-bottom: 8px;">
-                        Custom Location
+                        ${t('map.custom_location')}
                     </p>
                     <button class="btn-primary" style="padding: 8px 12px; font-size: 13px;"
                         onclick="window.createPicnicPrompt(${e.latlng.lat}, ${e.latlng.lng})">
-                        Create Event Here
+                        ${t('map.create_here_btn')}
                     </button>
                 </div>
             `;
@@ -419,18 +518,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Feature selection exposing to global for the popup button
     window.createPicnicPrompt = async (lat, lon) => {
         map.closePopup();
-        const picnicName = prompt("What is the event? (e.g. Alex's Birthday)");
+        const picnicName = prompt(t('map.prompt_event'));
         if (!picnicName) return;
-        const organizerName = prompt("What is your name?");
+        const organizerName = prompt(t('map.prompt_organizer'));
         if (!organizerName) return;
 
         const dateResult = await requestDateAndTime();
         if (!dateResult) return; // User cancelled
         const { dateText, timeText } = dateResult;
 
-        updateStatus(`Creating Event...`, 'loading');
+        updateStatus(t('status.creating_event'), 'loading');
         await createPicnic(picnicName, lat, lon, organizerName, dateText, timeText);
-        updateStatus(`Event created! Share the URL with friends.`, 'success');
+        updateStatus(t('status.event_created'), 'success');
 
         // Switch to Picnic tab to show creation success and the dashboard
         document.querySelector('.pp-nav-item[data-target="view-picnic"]').click();
@@ -453,17 +552,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // Cache the find-button's resting label so we can swap it during search.
-    const findBtnDefaultHTML = elements.findButton.innerHTML;
+    let findBtnDefaultHTML = elements.findButton.innerHTML;
     const setFindLoading = (loading) => {
         elements.findButton.disabled = loading;
         elements.findButton.classList.toggle('is-loading', loading);
         elements.findButton.innerHTML = loading
-            ? '<span class="pp-spinner" aria-hidden="true"></span> Searching…'
+            ? `<span class="pp-spinner" aria-hidden="true"></span> ${t('cta.searching')}`
             : findBtnDefaultHTML;
     };
 
     elements.findButton.addEventListener('click', async () => {
-        updateStatus("Clearing map...", "loading");
+        updateStatus(t('status.clearing_map'), "loading");
         setFindLoading(true);
 
         // Hide sidebar on mobile after clicking find
@@ -473,7 +572,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const effectiveAmenities = getSelectedAmenities();
         if (effectiveAmenities.length === 0) {
-            updateStatus("Please select at least one amenity.", "error");
+            updateStatus(t('status.no_amenity'), "error");
             setFindLoading(false);
             return;
         }
@@ -483,20 +582,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         const radius = parseInt(elements.distanceSlider.value, 10);
 
         try {
-            updateStatus(`Querying Overpass API for ${effectiveAmenities.length} amenity types...`, 'loading');
+            updateStatus(t('status.querying', { n: effectiveAmenities.length }), 'loading');
 
             const query = buildOverpassQuery(effectiveAmenities, bbox);
             console.log("Query:\n", query);
             const data = await fetchAmenities(query);
 
             if (!data || !data.elements || data.elements.length === 0) {
-                updateStatus("No spots found — try relaxing your filters.", "empty");
+                updateStatus(t('status.no_spots_relax'), "empty");
                 renderClusters([], radius, mapState);
                 clearResults();
                 return;
             }
 
-            updateStatus("Clustering amenities...", "loading");
+            updateStatus(t('status.clustering'), "loading");
 
             const { clusters } = clusterAmenities(data.elements, effectiveAmenities, radius);
 
@@ -519,7 +618,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             if (addedConditions.length > 0 && finalClusters.length > 0) {
-                updateStatus(`Checking proximity conditions for ${finalClusters.length} clusters...`, 'loading');
+                updateStatus(t('status.checking_proximity', { n: finalClusters.length }), 'loading');
                 finalClusters = await filterByConditions(finalClusters, addedConditions, radius, proxLogicMode);
             }
 
@@ -534,13 +633,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
 
             if (finalClusters.length > 0) {
-                updateStatus(`Found ${finalClusters.length} beautiful picnic spot(s)!`, 'success');
+                updateStatus(tp('status.found', finalClusters.length), 'success');
             } else {
-                updateStatus("No spots matched all your criteria. Try relaxing your filters.", "empty");
+                updateStatus(t('status.no_match'), "empty");
             }
 
         } catch (error) {
-            updateStatus(`Error executing search: ${error.message}`, "error");
+            updateStatus(t('status.search_error', { message: error.message }), "error");
             console.error(error);
         } finally {
             setFindLoading(false);
@@ -551,13 +650,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const isPicnicActive = await checkUrlForPicnic();
 
     if (isPicnicActive) {
-        updateStatus(`Welcome to the event!`, 'success');
+        updateStatus(t('status.welcome_event'), 'success');
         elements.sidebar.classList.remove('open'); // Close sidebar on mobile
 
         // Show join dialog if not logged in
         if (!state.currentUser) {
             setTimeout(async () => {
-                const name = prompt("You've been invited to an event! What's your name?");
+                const name = prompt(t('map.prompt_join'));
                 if (name) {
                     await joinPicnic(name);
                 }
@@ -580,6 +679,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 100);
 
     } else {
-        updateStatus("Welcome! Select amenities and click 'Find Amenity Clusters'.");
+        updateStatus(t('status.welcome'));
     }
 });
