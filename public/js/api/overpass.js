@@ -22,7 +22,7 @@ export const buildOverpassQuery = (effectiveAmenities, bbox) => {
 const OVERPASS_MIRRORS = [
     'https://overpass-api.de/api/interpreter',
     'https://overpass.kumi.systems/api/interpreter',
-    'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+    'https://overpass.osm.ch/api/interpreter',
 ];
 
 export const fetchAmenities = async (query) => {
