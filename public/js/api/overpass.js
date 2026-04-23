@@ -19,11 +19,42 @@ export const buildOverpassQuery = (effectiveAmenities, bbox) => {
     return query;
 };
 
-const OVERPASS_MIRRORS = [
+// overpass.osm.ch is a Swiss-only mirror (fast, but 404s outside CH).
+// For queries inside CH we prefer it; elsewhere we fall back to the
+// generic mirrors.
+const MIRRORS_CH = [
     'https://overpass.osm.ch/api/interpreter',
-    'https://overpass.kumi.systems/api/interpreter',
     'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
 ];
+const MIRRORS_GLOBAL = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+];
+
+// Rough Swiss bounding box (with small tolerance so border edges still route
+// to the Swiss mirror). Lat: 45.8–47.9, Lon: 5.9–10.5.
+const CH_BBOX = { south: 45.7, west: 5.8, north: 47.9, east: 10.6 };
+const inCH = (lat, lon) =>
+    lat >= CH_BBOX.south && lat <= CH_BBOX.north &&
+    lon >= CH_BBOX.west  && lon <= CH_BBOX.east;
+
+// Inspect a query string and decide whether it targets Switzerland.
+// Supports both bbox queries `(s,w,n,e)` and proximity queries `(around:r,lat,lon)`.
+const queryIsSwiss = (query) => {
+    const around = query.match(/around:\d+(?:\.\d+)?,(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+    if (around) return inCH(parseFloat(around[1]), parseFloat(around[2]));
+    const bbox = query.match(/\((-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)\)/);
+    if (bbox) {
+        const s = parseFloat(bbox[1]), w = parseFloat(bbox[2]);
+        const n = parseFloat(bbox[3]), e = parseFloat(bbox[4]);
+        // Require the whole bbox to be inside CH.
+        return inCH(s, w) && inCH(n, e);
+    }
+    return false;
+};
+
+const pickMirrors = (query) => queryIsSwiss(query) ? MIRRORS_CH : MIRRORS_GLOBAL;
 
 // Per-mirror retry (1 retry after a short backoff) before advancing the chain.
 const MIRROR_RETRIES = 1;
@@ -71,8 +102,9 @@ export const fetchAmenities = async (query) => {
 
     const body = `data=${encodeURIComponent(query)}`;
     let lastError;
+    const mirrors = pickMirrors(query);
 
-    for (const url of OVERPASS_MIRRORS) {
+    for (const url of mirrors) {
         for (let attempt = 0; attempt <= MIRROR_RETRIES; attempt++) {
             try {
                 const response = await postWithTimeout(url, body);
