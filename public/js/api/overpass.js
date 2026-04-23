@@ -20,9 +20,9 @@ export const buildOverpassQuery = (effectiveAmenities, bbox) => {
 };
 
 const OVERPASS_MIRRORS = [
-    'https://overpass-api.de/api/interpreter',
-    'https://overpass.kumi.systems/api/interpreter',
     'https://overpass.osm.ch/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://overpass-api.de/api/interpreter',
 ];
 
 export const fetchAmenities = async (query) => {
