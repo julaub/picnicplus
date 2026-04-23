@@ -51,13 +51,6 @@ export const initPicnicTab = (containerId) => {
 
     if (!container || !navBtn) return;
 
-    window.addEventListener('stateUpdated', (e) => {
-        if (!e.detail || e.detail.topic === 'all' || e.detail.topic === 'potluckItems' || e.detail.topic === 'dates') {
-            renderDashboard();
-        }
-    });
-    window.addEventListener('localeChange', renderDashboard);
-
     const renderDashboard = () => {
         if (!state.picnicId || !state.picnicDetails) {
             navBtn.style.display = 'none';
@@ -269,6 +262,13 @@ export const initPicnicTab = (containerId) => {
             else navigator.clipboard.writeText(shareUrl);
         });
     };
+
+    window.addEventListener('stateUpdated', (e) => {
+        if (!e.detail || e.detail.topic === 'all' || e.detail.topic === 'potluckItems' || e.detail.topic === 'dates') {
+            renderDashboard();
+        }
+    });
+    window.addEventListener('localeChange', renderDashboard);
 
     renderDashboard();
 };
