@@ -26,7 +26,8 @@ export const amenityDefinitions = {
     'camp_site': { title: 'Camp Site', emoji: '🏕️', color: 'var(--color-comfort)', queryTags: ['tourism=camp_site'], canBeArea: true },
     'charging_station': { title: 'Power / EV Charging', emoji: '🔌', color: 'var(--color-water)', queryTags: ['amenity=charging_station', 'amenity=power_supply', 'man_made=power_outlet'], attributeTags: ['socket=yes'], canBeArea: false },
     'viewpoint': { title: 'Viewpoint', emoji: '🌄', color: 'var(--color-comfort)', queryTags: ['tourism=viewpoint'], canBeArea: false },
-    'beach': { title: 'Beach', emoji: '🏖️', color: 'var(--color-water)', queryTags: ['natural=beach'], canBeArea: true }
+    'beach': { title: 'Beach', emoji: '🏖️', color: 'var(--color-water)', queryTags: ['natural=beach'], canBeArea: true },
+    'table_tennis': { title: 'Table Tennis', emoji: '🏓', color: 'var(--color-comfort)', queryTags: ['sport=table_tennis', 'leisure=table_tennis_table'], canBeArea: true }
 };
 
 export const amenityGroupDefinitions = {
@@ -66,7 +67,8 @@ export const uiSections = [
             { id: 'camp_site', type: 'single' },
             { id: 'charging_station', type: 'single' },
             { id: 'viewpoint', type: 'single' },
-            { id: 'beach', type: 'single' }
+            { id: 'beach', type: 'single' },
+            { id: 'table_tennis', type: 'single' }
         ]
     }
 ];

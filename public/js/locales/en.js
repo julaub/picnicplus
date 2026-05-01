@@ -205,6 +205,7 @@ export default {
     'amenity.charging_station': 'Power / EV Charging',
     'amenity.viewpoint': 'Viewpoint',
     'amenity.beach': 'Beach',
+    'amenity.table_tennis': 'Table Tennis',
 
     // Amenity groups (sidebar chips show short label without "(Any)")
     'group.fire_place': 'Fire Place',

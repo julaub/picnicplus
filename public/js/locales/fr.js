@@ -204,6 +204,7 @@ export default {
     'amenity.charging_station': 'Recharge électrique',
     'amenity.viewpoint': 'Point de vue',
     'amenity.beach': 'Plage',
+    'amenity.table_tennis': 'Tennis de table',
 
     // Amenity groups
     'group.fire_place': 'Foyer',
