@@ -27,23 +27,29 @@ export const fetchAmenities = async (query) => {
 };
 
 export const clusterAmenities = (elements, effectiveAmenities, radius) => {
+    const effectiveSet = new Set(effectiveAmenities);
+    const activeDefinitions = Object.entries(amenityDefinitions)
+        .filter(([key]) => effectiveSet.has(key))
+        .map(([key, def]) => ({
+            key,
+            queryTagsParsed: def.queryTags.map(qt => qt.split('=')),
+            attributeTagsParsed: def.attributeTags ? def.attributeTags.map(at => at.split('=')) : [],
+            typeInfo: { key, title: def.title, emoji: def.emoji, color: def.color }
+        }));
+
     const allItems = elements.map(el => {
         const lat = el.lat || (el.center && el.center.lat);
         const lon = el.lon || (el.center && el.center.lon);
 
         let typeInfo = null;
-        for (const [key, def] of Object.entries(amenityDefinitions)) {
-            if (!effectiveAmenities.includes(key)) continue;
-            const matchesQueryTag = def.queryTags.some(qt => {
-                const [k, v] = qt.split('=');
-                return el.tags && el.tags[k] === v;
-            });
-            const matchesAttributeTag = def.attributeTags?.some(at => {
-                const [k, v] = at.split('=');
-                return el.tags && el.tags[k] === v;
-            });
+        for (const activeDef of activeDefinitions) {
+            const matchesQueryTag = activeDef.queryTagsParsed.some(([k, v]) => el.tags && el.tags[k] === v);
+            let matchesAttributeTag = false;
+            if (!matchesQueryTag && activeDef.attributeTagsParsed.length > 0) {
+                matchesAttributeTag = activeDef.attributeTagsParsed.some(([k, v]) => el.tags && el.tags[k] === v);
+            }
             if (matchesQueryTag || matchesAttributeTag) {
-                typeInfo = { key, title: def.title, emoji: def.emoji, color: def.color };
+                typeInfo = activeDef.typeInfo;
                 break;
             }
         }
