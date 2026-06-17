@@ -1,5 +1,6 @@
 // js/components/potluck.js
 import { state, claimPotluckItemApi, addPotluckItemApi } from '../state.js';
+import { escapeHTML } from '../utils/security.js';
 
 export const initPotluck = (containerId) => {
     const container = document.getElementById(containerId);
@@ -17,7 +18,7 @@ export const initPotluck = (containerId) => {
         neededItems.forEach(item => {
             neededHtml += `
                 <li class="potluck-item fade-in">
-                    <span class="item-name">${item.name}</span>
+                    <span class="item-name">${escapeHTML(item.name)}</span>
                     <button class="btn-primary claim-btn" data-id="${item.id}" ${!state.currentUser ? 'disabled title="Join picnic to claim"' : ''}>I'll bring this!</button>
                 </li>
             `;
@@ -32,8 +33,8 @@ export const initPotluck = (containerId) => {
             const isMyClaim = state.currentUser && item.claimedBy.id === state.currentUser.id;
             coveredHtml += `
                 <li class="potluck-item fade-in">
-                    <span class="item-name strike-through">${item.name}</span>
-                    <span class="claimed-badge">✅ Brought by ${isMyClaim ? 'You' : item.claimedBy.name}</span>
+                    <span class="item-name strike-through">${escapeHTML(item.name)}</span>
+                    <span class="claimed-badge">✅ Brought by ${isMyClaim ? 'You' : escapeHTML(item.claimedBy.name)}</span>
                 </li>
             `;
         });
