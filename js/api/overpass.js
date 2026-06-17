@@ -27,31 +27,39 @@ export const fetchAmenities = async (query) => {
 };
 
 export const clusterAmenities = (elements, effectiveAmenities, radius) => {
+    const amenitiesSet = new Set(effectiveAmenities);
+    const processedDefs = Object.entries(amenityDefinitions)
+        .filter(([key]) => amenitiesSet.has(key))
+        .map(([key, def]) => ({
+            key,
+            title: def.title,
+            emoji: def.emoji,
+            color: def.color,
+            queryTags: def.queryTags.map(t => t.split('=')),
+            attributeTags: def.attributeTags ? def.attributeTags.map(t => t.split('=')) : []
+        }));
+
     const allItems = elements.map(el => {
-        const lat = el.lat || (el.center && el.center.lat);
-        const lon = el.lon || (el.center && el.center.lon);
+        const lat = el.lat ?? el.center?.lat;
+        const lon = el.lon ?? el.center?.lon;
 
         let typeInfo = null;
-        for (const [key, def] of Object.entries(amenityDefinitions)) {
-            if (!effectiveAmenities.includes(key)) continue;
-            const matchesQueryTag = def.queryTags.some(qt => {
-                const [k, v] = qt.split('=');
-                return el.tags && el.tags[k] === v;
-            });
-            const matchesAttributeTag = def.attributeTags?.some(at => {
-                const [k, v] = at.split('=');
-                return el.tags && el.tags[k] === v;
-            });
+        for (const def of processedDefs) {
+            const tags = el.tags || {};
+            const matchesQueryTag = def.queryTags.some(([k, v]) => tags[k] === v);
+            const matchesAttributeTag = def.attributeTags.some(([k, v]) => tags[k] === v);
+
             if (matchesQueryTag || matchesAttributeTag) {
-                typeInfo = { key, title: def.title, emoji: def.emoji, color: def.color };
+                typeInfo = { key: def.key, title: def.title, emoji: def.emoji, color: def.color };
                 break;
             }
         }
         return { lat, lon, tags: el.tags, id: el.id, type: el.type, typeInfo };
-    }).filter(item => item.lat && item.lon && item.typeInfo);
+    }).filter(item => item.lat != null && item.lon != null && item.typeInfo);
 
     const clusters = [];
     const usedIndices = new Set();
+    const latThreshold = radius / 111320; // Approx meters per degree latitude
 
     allItems.forEach((item, i) => {
         if (usedIndices.has(i)) return;
@@ -59,13 +67,20 @@ export const clusterAmenities = (elements, effectiveAmenities, radius) => {
 
         const currentCluster = [item];
         let sums = { lat: item.lat, lon: item.lon };
+        // Approx meters per degree longitude depends on latitude
+        const lonThreshold = radius / (111320 * Math.cos(item.lat * Math.PI / 180));
 
         for (let j = 0; j < allItems.length; j++) {
             if (i === j || usedIndices.has(j)) continue;
 
             const other = allItems[j];
-            // Instead of comparing to the center repeatedly, simple point-to-point within cluster bounding sphere
-            // For true clustering, compare to cluster center
+
+            // Bounding box early exit (O(N^2) but with very cheap operations)
+            if (Math.abs(item.lat - other.lat) > latThreshold ||
+                Math.abs(item.lon - other.lon) > lonThreshold) {
+                continue;
+            }
+
             const dist = calculateDistance(item.lat, item.lon, other.lat, other.lon);
             if (dist <= radius) {
                 currentCluster.push(other);
