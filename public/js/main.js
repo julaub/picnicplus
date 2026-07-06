@@ -463,11 +463,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         applyDomTranslations(document);
         syncLangButton();
         syncProxLogicLabel();
-        // Refresh the find-button label cache, then rebuild dynamic widgets.
-        elements.findButton.innerHTML = `
+        // Refresh the find-button label cache, then re-render it in whichever
+        // state it's in (Find or Stop) so a mid-search locale switch keeps
+        // the Stop label.
+        findBtnDefaultHTML = `
             <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <span data-i18n="cta.find_clusters">${t('cta.find_clusters')}</span>`;
-        findBtnDefaultHTML = elements.findButton.innerHTML;
+        setFindLoading(!!searchAbort);
         buildAmenitiesUI();
         renderAddedConditions();
         // Re-emit a stateUpdated so component renders pick up the new locale.
@@ -553,15 +555,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Cache the find-button's resting label so we can swap it during search.
     let findBtnDefaultHTML = elements.findButton.innerHTML;
+    // AbortController for the in-flight search; null when idle. While a
+    // search runs, the find button becomes a Stop button that aborts it.
+    let searchAbort = null;
     const setFindLoading = (loading) => {
-        elements.findButton.disabled = loading;
-        elements.findButton.classList.toggle('is-loading', loading);
+        elements.findButton.classList.toggle('is-stop', loading);
         elements.findButton.innerHTML = loading
-            ? `<span class="pp-spinner" aria-hidden="true"></span> ${t('cta.searching')}`
+            ? `<span class="pp-spinner" aria-hidden="true"></span> ${t('cta.stop_search')}`
             : findBtnDefaultHTML;
     };
 
     elements.findButton.addEventListener('click', async () => {
+        if (searchAbort) {
+            searchAbort.abort();
+            return;
+        }
         updateStatus(t('status.clearing_map'), "loading");
         setFindLoading(true);
 
@@ -581,12 +589,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const bbox = `${bounds.getSouth()},${bounds.getWest()},${bounds.getNorth()},${bounds.getEast()}`;
         const radius = parseInt(elements.distanceSlider.value, 10);
 
+        searchAbort = new AbortController();
+        const { signal } = searchAbort;
+
         try {
             updateStatus(t('status.querying', { n: effectiveAmenities.length }), 'loading');
 
             const query = buildOverpassQuery(effectiveAmenities, bbox);
             console.log("Query:\n", query);
-            const data = await fetchAmenities(query);
+            const data = await fetchAmenities(query, { signal });
 
             if (!data || !data.elements || data.elements.length === 0) {
                 updateStatus(t('status.no_spots_relax'), "empty");
@@ -619,7 +630,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (addedConditions.length > 0 && finalClusters.length > 0) {
                 updateStatus(t('status.checking_proximity', { n: finalClusters.length }), 'loading');
-                finalClusters = await filterByConditions(finalClusters, addedConditions, radius, proxLogicMode);
+                finalClusters = await filterByConditions(finalClusters, addedConditions, radius, proxLogicMode, { signal });
             }
 
             renderClusters(finalClusters, radius, mapState, {
@@ -639,9 +650,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
         } catch (error) {
-            updateStatus(t('status.search_error', { message: error.message }), "error");
-            console.error(error);
+            if (error.name === 'AbortError') {
+                updateStatus(t('status.search_cancelled'), 'neutral');
+            } else {
+                updateStatus(t('status.search_error', { message: error.message }), "error");
+                console.error(error);
+            }
         } finally {
+            searchAbort = null;
             setFindLoading(false);
         }
     });

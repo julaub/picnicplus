@@ -50,6 +50,7 @@ export default {
     // CTAs
     'cta.find_clusters': 'Trouver les regroupements',
     'cta.searching': 'Recherche…',
+    'cta.stop_search': 'Arrêter la recherche',
     'cta.reset_all': 'Réinitialiser les filtres',
 
     // Status messages
@@ -72,6 +73,7 @@ export default {
     'status.creating_event': "Création de l'événement…",
     'status.event_created': "Événement créé ! Partagez le lien avec vos amis.",
     'status.search_error': 'Erreur lors de la recherche : {{message}}',
+    'status.search_cancelled': 'Recherche arrêtée. Déplacez la carte ou ajustez les filtres, puis relancez.',
     'status.reset_link': 'Réinitialiser les filtres',
     'status.found_one': '1 spot de pique-nique trouvé !',
     'status.found_other': '{{count}} spots de pique-nique trouvés !',

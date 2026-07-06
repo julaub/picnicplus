@@ -51,6 +51,7 @@ export default {
     // CTAs
     'cta.find_clusters': 'Find Amenity Clusters',
     'cta.searching': 'Searching…',
+    'cta.stop_search': 'Stop search',
     'cta.reset_all': 'Reset all filters',
 
     // Status messages
@@ -73,6 +74,7 @@ export default {
     'status.creating_event': 'Creating Event...',
     'status.event_created': 'Event created! Share the URL with friends.',
     'status.search_error': 'Error executing search: {{message}}',
+    'status.search_cancelled': 'Search stopped. Pan the map or adjust filters, then search again.',
     'status.reset_link': 'Reset filters',
     'status.found_one': 'Found 1 beautiful picnic spot!',
     'status.found_other': 'Found {{count}} beautiful picnic spots!',

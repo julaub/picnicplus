@@ -81,9 +81,13 @@ const cacheSet = (key, val) => {
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-const postWithTimeout = async (url, body) => {
+// Combines the per-request timeout with an optional caller-supplied abort
+// signal (e.g. the user pressing Stop).
+const postWithTimeout = async (url, body, signal) => {
     const ac = new AbortController();
     const timer = setTimeout(() => ac.abort(), REQUEST_TIMEOUT_MS);
+    const onAbort = () => ac.abort();
+    signal?.addEventListener('abort', onAbort, { once: true });
     try {
         return await fetch(url, {
             method: 'POST',
@@ -93,10 +97,15 @@ const postWithTimeout = async (url, body) => {
         });
     } finally {
         clearTimeout(timer);
+        signal?.removeEventListener('abort', onAbort);
     }
 };
 
-export const fetchAmenities = async (query) => {
+const throwIfAborted = (signal) => {
+    if (signal?.aborted) throw new DOMException('Search cancelled', 'AbortError');
+};
+
+export const fetchAmenities = async (query, { signal } = {}) => {
     const cached = cacheGet(query);
     if (cached) return cached;
 
@@ -106,8 +115,9 @@ export const fetchAmenities = async (query) => {
 
     for (const url of mirrors) {
         for (let attempt = 0; attempt <= MIRROR_RETRIES; attempt++) {
+            throwIfAborted(signal);
             try {
-                const response = await postWithTimeout(url, body);
+                const response = await postWithTimeout(url, body, signal);
                 if (response.ok) {
                     const json = await response.json();
                     cacheSet(query, json);
@@ -119,7 +129,9 @@ export const fetchAmenities = async (query) => {
                 const transient = response.status === 504 || response.status === 502 || response.status === 429;
                 if (!transient) break;
             } catch (err) {
-                // Network / abort errors are transient — retry once on same mirror.
+                // Caller cancelled: stop the whole chain, don't fall back.
+                throwIfAborted(signal);
+                // Network / timeout errors are transient — retry once on same mirror.
                 lastError = err;
             }
             if (attempt < MIRROR_RETRIES) {
@@ -195,7 +207,7 @@ export const clusterAmenities = (elements, effectiveAmenities, radius) => {
     return { clusters, allItems };
 };
 
-export const filterByConditions = async (clusters, conditions, bboxRadius, logic = 'AND') => {
+export const filterByConditions = async (clusters, conditions, bboxRadius, logic = 'AND', { signal } = {}) => {
     if (conditions.length === 0 || clusters.length === 0) return clusters;
 
     // We do one big query for conditions around all clusters
@@ -215,7 +227,7 @@ export const filterByConditions = async (clusters, conditions, bboxRadius, logic
     });
     query += `); out center;\n\n`;
 
-    const conditionData = await fetchAmenities(query);
+    const conditionData = await fetchAmenities(query, { signal });
     const condElements = conditionData.elements || [];
 
     return clusters.filter(cluster => {
