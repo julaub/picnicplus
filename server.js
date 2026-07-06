@@ -4,7 +4,6 @@ import { v4 as uuidv4 } from 'uuid';
 import pool from './db.js';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import validator from 'validator';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -49,12 +48,13 @@ app.post('/api/picnics', async (req, res) => {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
+    // Values are stored raw; the frontend escapes them at render time.
     const picnicId = uuidv4();
-    const safeName = validator.escape(name);
-    const safeOrganizerName = validator.escape(organizerName);
-    const pAvatar = avatar ? validator.escape(avatar) : '👑';
-    const safeDateText = dateText ? validator.escape(dateText) : null;
-    const safeTimeText = timeText ? validator.escape(timeText) : null;
+    const safeName = String(name).trim();
+    const safeOrganizerName = String(organizerName).trim();
+    const pAvatar = avatar ? String(avatar) : '👑';
+    const safeDateText = dateText ? String(dateText) : null;
+    const safeTimeText = timeText ? String(timeText) : null;
 
     try {
         const connection = await pool.getConnection();
@@ -192,8 +192,8 @@ app.post('/api/picnics/:id/participants', async (req, res) => {
     if (!name) return res.status(400).json({ error: 'Name is required' });
 
     try {
-        const safeName = validator.escape(name);
-        const pAvatar = avatar ? validator.escape(avatar) : '👤';
+        const safeName = String(name).trim();
+        const pAvatar = avatar ? String(avatar) : '👤';
         const [result] = await pool.query(
             `INSERT INTO participants (picnic_id, name, role, avatar) VALUES (?, ?, 'guest', ?)`,
             [picnicId, safeName, pAvatar]
@@ -214,8 +214,8 @@ app.post('/api/picnics/:id/potluck', async (req, res) => {
     if (!name) return res.status(400).json({ error: 'Item name is required' });
 
     try {
-        const safeName = validator.escape(name);
-        const safeAddedBy = addedBy ? validator.escape(String(addedBy)) : 'Anonymous';
+        const safeName = String(name).trim();
+        const safeAddedBy = addedBy ? String(addedBy) : 'Anonymous';
         const itemQuantity = parseInt(quantity) || 1;
         const [result] = await pool.query(
             `INSERT INTO potluck_items (picnic_id, name, status, added_by, quantity) VALUES (?, ?, 'needed', ?, ?)`,
@@ -295,8 +295,8 @@ app.post('/api/picnics/:id/dates', async (req, res) => {
     if (!dateText || !timeText || !participantId) return res.status(400).json({ error: 'Missing required fields' });
 
     try {
-        const safeDateText = validator.escape(dateText);
-        const safeTimeText = validator.escape(timeText);
+        const safeDateText = String(dateText);
+        const safeTimeText = String(timeText);
         const [result] = await pool.query(
             `INSERT INTO picnic_dates (picnic_id, date_text, time_text, added_by) VALUES (?, ?, ?, ?)`,
             [picnicId, safeDateText, safeTimeText, participantId]

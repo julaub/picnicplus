@@ -1,6 +1,7 @@
 // Results list rendered in the sidebar after Find Amenity Clusters succeeds.
 import { amenityDefinitions, amenityGroupDefinitions } from '../utils/amenities.js';
 import { calculateDistance } from '../utils/conditions.js';
+import { escapeHtml } from '../utils/escape.js';
 import { t, tp } from '../i18n.js';
 
 const pickName = (cluster) => {
@@ -72,7 +73,7 @@ export const updateResults = (clusters, ctx = {}) => {
                     : '';
                 return `<button type="button" class="pp-result-card" data-idx="${i}">
                     <div class="pp-result-row1">
-                        <span class="pp-result-name">${pickName(c)}</span>
+                        <span class="pp-result-name">${escapeHtml(pickName(c))}</span>
                         <span class="pp-result-score">${score}/${total}</span>
                     </div>
                     <div class="pp-result-row2">

@@ -1,5 +1,6 @@
 // js/components/potluck.js
 import { state, claimPotluckItemApi, addPotluckItemApi, removePotluckItemApi } from '../state.js';
+import { escapeHtml } from '../utils/escape.js';
 import { t } from '../i18n.js';
 
 const ITEM_ICON_MAP = {
@@ -111,7 +112,7 @@ export const initPotluck = (containerId) => {
                 const totalClaimed = item.claims ? item.claims.reduce((a, c) => a + c.quantity, 0) : 0;
                 const myClaimObj = state.currentUser ? item.claims?.find(c => c.participantId === state.currentUser.id) : null;
                 const claimedByNames = item.claims ? item.claims.map(c =>
-                    (state.currentUser && c.participantId === state.currentUser.id ? t('potluck.you') : c.participantName)
+                    (state.currentUser && c.participantId === state.currentUser.id ? t('potluck.you') : escapeHtml(c.participantName))
                 ).join(', ') : '';
 
                 const row = document.createElement('div');
@@ -128,7 +129,7 @@ export const initPotluck = (containerId) => {
                     ? t('potluck.brought_by', { names: claimedByNames })
                     : t('potluck.unclaimed');
                 body.innerHTML = `
-                    <div class="pp-item-name">${item.name}</div>
+                    <div class="pp-item-name">${escapeHtml(item.name)}</div>
                     <div class="pp-item-meta">${totalClaimed}/${item.quantity} · ${metaTail}</div>`;
 
                 const controls = document.createElement('div');

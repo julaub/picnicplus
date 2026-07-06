@@ -1,4 +1,5 @@
 import { state, proposeDateApi, toggleVoteApi } from '../state.js';
+import { escapeHtml } from '../utils/escape.js';
 import { requestDateAndTime } from './date-picker.js';
 import { generateQRCodeUrl } from '../utils/qr.js';
 import { downloadICS } from '../utils/ics.js';
@@ -93,7 +94,7 @@ export const initPicnicTab = (containerId) => {
             <div class="pp-header-row">
                 <div>
                     <div class="pp-subtitle" style="color:var(--green-700);text-transform:uppercase;letter-spacing:.06em;font-size:11px;font-weight:700;">${t('event.eyebrow')}</div>
-                    <h1 class="pp-title">${eventName}</h1>
+                    <h1 class="pp-title">${escapeHtml(eventName)}</h1>
                 </div>
                 <button id="share-event-btn" style="width:40px;height:40px;border-radius:14px;background:#fff;border:1px solid rgba(20,22,19,.06);display:flex;align-items:center;justify-content:center;color:var(--ink-700);box-shadow:var(--shadow-1);flex-shrink:0;">
                     <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
@@ -110,8 +111,8 @@ export const initPicnicTab = (containerId) => {
         hero.innerHTML = `
             <div class="inner">
                 <div class="pp-event-status"><span class="dot"></span> ${t('event.confirmed')}</div>
-                <div class="pp-event-name">${eventName}</div>
-                <div class="pp-event-meta">${dateLabel}</div>
+                <div class="pp-event-name">${escapeHtml(eventName)}</div>
+                <div class="pp-event-meta">${escapeHtml(dateLabel)}</div>
                 <div class="pp-event-countdown">
                     <div class="pp-count-cell"><div class="pp-count-num">${String(days).padStart(2,'0')}</div><div class="pp-count-label">${t('event.countdown_days')}</div></div>
                     <div class="pp-count-cell"><div class="pp-count-num">${String(hours).padStart(2,'0')}</div><div class="pp-count-label">${t('event.countdown_hours')}</div></div>
@@ -181,7 +182,7 @@ export const initPicnicTab = (containerId) => {
             state.dates.forEach(date => {
                 const myVote = state.currentUser ? date.votes.find(v => v.participantId === state.currentUser.id) : null;
                 const voteCount = date.votes.length;
-                const voters = date.votes.map(v => v.participantName).join(', ');
+                const voters = date.votes.map(v => escapeHtml(v.participantName)).join(', ');
 
                 const tile = document.createElement('div');
                 tile.style.cssText = 'display:flex;align-items:center;gap:12px;background:#fff;border-radius:14px;padding:12px 14px;border:1px solid rgba(20,22,19,.05);box-shadow:var(--shadow-1);margin-bottom:8px;';
@@ -189,7 +190,7 @@ export const initPicnicTab = (containerId) => {
                 tile.innerHTML = `
                     <div style="width:38px;height:38px;border-radius:10px;background:var(--green-50);color:var(--green-700);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;">📅</div>
                     <div style="flex:1;min-width:0;">
-                        <div style="font-size:14px;font-weight:600;color:var(--ink-900);">${date.dateText} · ${date.timeText}</div>
+                        <div style="font-size:14px;font-weight:600;color:var(--ink-900);">${escapeHtml(date.dateText)} · ${escapeHtml(date.timeText)}</div>
                         <div style="font-size:12px;color:var(--ink-500);margin-top:2px;">${voteText}</div>
                     </div>`;
 

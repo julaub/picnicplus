@@ -2,6 +2,7 @@
 // pin or results-list card is selected. Single shared instance.
 import { amenityDefinitions, amenityGroupDefinitions } from '../utils/amenities.js';
 import { calculateDistance, conditionDefinitions } from '../utils/conditions.js';
+import { escapeHtml } from '../utils/escape.js';
 import { t, tp } from '../i18n.js';
 
 let _root = null;
@@ -73,7 +74,7 @@ const render = (cluster, ctx = {}) => {
         <div class="pp-spot-head">
             <div>
                 <div class="pp-spot-eyebrow">${t('spot.eyebrow')}</div>
-                <h3 class="pp-spot-title">${name}</h3>
+                <h3 class="pp-spot-title">${escapeHtml(name)}</h3>
                 <div class="pp-spot-meta">${metaParts.join(' · ')}</div>
             </div>
             <button type="button" class="pp-spot-close" aria-label="${t('spot.close_aria')}">

@@ -1,5 +1,6 @@
 // js/components/participants.js
 import { state } from '../state.js';
+import { escapeHtml } from '../utils/escape.js';
 import { t } from '../i18n.js';
 
 const AVATAR_COLORS = ['#0E7A4D','#E76A2C','#8E5CC2','#1F6FB8','#C94A3A','#0A5A3A','#B88515','#4F6B8A','#D9527E'];
@@ -117,8 +118,8 @@ export const initParticipants = (containerId) => {
                 const body = document.createElement('div');
                 body.className = 'pp-guest-body';
                 body.innerHTML = `
-                    <div class="pp-guest-name">${p.name}${isMe ? ` <span style="font-size:11px;color:var(--ink-400);font-weight:500;">${t('guests.you_suffix')}</span>` : ''}</div>
-                    <div class="pp-guest-handle">${p.role === 'organizer' ? t('guests.organizer') : '@' + p.name.toLowerCase().replace(/\s+/g, '')}</div>`;
+                    <div class="pp-guest-name">${escapeHtml(p.name)}${isMe ? ` <span style="font-size:11px;color:var(--ink-400);font-weight:500;">${t('guests.you_suffix')}</span>` : ''}</div>
+                    <div class="pp-guest-handle">${p.role === 'organizer' ? t('guests.organizer') : '@' + escapeHtml(p.name.toLowerCase().replace(/\s+/g, ''))}</div>`;
 
                 const rsvpStatus = rsvpState.get(p.id);
                 const pill = document.createElement('button');
