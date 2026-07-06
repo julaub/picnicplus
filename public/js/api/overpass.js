@@ -1,11 +1,23 @@
 import { amenityDefinitions, amenityGroupDefinitions } from '../utils/amenities.js';
 import { conditionDefinitions, calculateDistance } from '../utils/conditions.js';
 
+// Max distance (metres) between a nearWaterTags object (e.g. a bare sand or
+// shingle bank) and water for it to count as a potential natural beach.
+const NEAR_WATER_RADIUS = 30;
+
 export const buildOverpassQuery = (effectiveAmenities, bbox) => {
-    let query = `[out:json][timeout:90];\n(\n`;
-    effectiveAmenities.forEach(key => {
-        const def = amenityDefinitions[key];
-        if (def && def.queryTags) {
+    const defs = effectiveAmenities.map(key => amenityDefinitions[key]).filter(Boolean);
+    // Definitions with nearWaterTags need a set of water geometries to
+    // measure proximity against (around.water below).
+    const needsWater = defs.some(def => def.nearWaterTags?.length);
+
+    let query = `[out:json][timeout:90];\n`;
+    if (needsWater) {
+        query += `(\n  way["natural"="water"](${bbox});\n  relation["natural"="water"](${bbox});\n)->.water;\n`;
+    }
+    query += `(\n`;
+    defs.forEach(def => {
+        if (def.queryTags) {
             def.queryTags.forEach(tag => {
                 const [k, v] = tag.split('=');
                 query += `  node["${k}"="${v}"](${bbox});\n`;
@@ -14,6 +26,13 @@ export const buildOverpassQuery = (effectiveAmenities, bbox) => {
                 }
             });
         }
+        def.nearWaterTags?.forEach(tag => {
+            const [k, v] = tag.split('=');
+            query += `  node["${k}"="${v}"](around.water:${NEAR_WATER_RADIUS})(${bbox});\n`;
+            if (def.canBeArea) {
+                query += `  way["${k}"="${v}"](around.water:${NEAR_WATER_RADIUS})(${bbox});\n  relation["${k}"="${v}"](around.water:${NEAR_WATER_RADIUS})(${bbox});\n`;
+            }
+        });
     });
     query += `); out center;\n\n`;
     return query;
@@ -158,7 +177,13 @@ export const clusterAmenities = (elements, effectiveAmenities, radius) => {
                 const [k, v] = at.split('=');
                 return el.tags && el.tags[k] === v;
             });
-            if (matchesQueryTag || matchesAttributeTag) {
+            // nearWaterTags results were already filtered to water proximity
+            // by the Overpass query itself, so a plain tag match suffices here.
+            const matchesNearWaterTag = def.nearWaterTags?.some(nw => {
+                const [k, v] = nw.split('=');
+                return el.tags && el.tags[k] === v;
+            });
+            if (matchesQueryTag || matchesAttributeTag || matchesNearWaterTag) {
                 typeInfo = { key, title: def.title, emoji: def.emoji, color: def.color };
                 break;
             }

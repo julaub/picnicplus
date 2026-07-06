@@ -26,7 +26,10 @@ export const amenityDefinitions = {
     'camp_site': { title: 'Camp Site', emoji: '🏕️', color: 'var(--color-comfort)', queryTags: ['tourism=camp_site'], canBeArea: true },
     'charging_station': { title: 'Power / EV Charging', emoji: '🔌', color: 'var(--color-water)', queryTags: ['amenity=charging_station', 'amenity=power_supply', 'man_made=power_outlet'], attributeTags: ['socket=yes'], canBeArea: false },
     'viewpoint': { title: 'Viewpoint', emoji: '🌄', color: 'var(--color-comfort)', queryTags: ['tourism=viewpoint'], canBeArea: false },
-    'beach': { title: 'Beach', emoji: '🏖️', color: 'var(--color-water)', queryTags: ['natural=beach'], canBeArea: true },
+    // nearWaterTags: objects not explicitly tagged as a beach but potentially a
+    // natural one (bare sand/shingle banks) — only matched within a few metres
+    // of water (see NEAR_WATER_RADIUS in overpass.js).
+    'beach': { title: 'Beach', emoji: '🏖️', color: 'var(--color-water)', queryTags: ['natural=beach', 'leisure=beach_resort', 'leisure=bathing_place', 'leisure=swimming_area'], nearWaterTags: ['natural=sand', 'natural=shingle'], canBeArea: true },
     'table_tennis': { title: 'Table Tennis', emoji: '🏓', color: 'var(--color-comfort)', queryTags: ['sport=table_tennis', 'leisure=table_tennis_table'], canBeArea: true }
 };
 
