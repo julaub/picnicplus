@@ -75,6 +75,13 @@ Whether you need a location with specific amenities like fire pits and water, or
 5. **Open the App**
    Navigate to `http://localhost:3000` in your web browser.
 
+## 🔐 Admin Interface
+
+A minimal admin dashboard is available at `/admin.html` to list and delete picnics (deletes cascade to guests, items, and dates).
+
+- It is protected by a secret token: set `ADMIN_TOKEN` in your `.env` (e.g. `openssl rand -hex 24`) and restart the server.
+- If `ADMIN_TOKEN` is not set, the admin API is disabled and the page cannot be used.
+
 ## 📱 Mobile Experience
 Event Finder is fully responsive. On mobile devices, the interface transforms to provide a seamless, app-like experience with a bottom navigation bar and full-screen swipeable panels for the map, guest list, and potluck tracker.
 

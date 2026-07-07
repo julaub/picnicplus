@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>PicnicPlus — Admin</title>
+<style>
+    :root {
+        --bg: #F7F4EE; --ink-900: #141613; --ink-500: #6B7066; --ink-300: #A9AEA3;
+        --green-700: #0E7A4D; --green-50: #E6F3EC; --sun-600: #E76A2C; --danger: #C94A3A;
+        --radius: 14px; --shadow: 0 2px 10px rgba(20,22,19,.07);
+    }
+    * { box-sizing: border-box; margin: 0; }
+    body {
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: var(--bg); color: var(--ink-900);
+        min-height: 100vh; padding: 32px 16px;
+    }
+    .wrap { max-width: 980px; margin: 0 auto; }
+    h1 { font-size: 22px; letter-spacing: -0.02em; }
+    .eyebrow { color: var(--green-700); text-transform: uppercase; letter-spacing: .06em; font-size: 11px; font-weight: 700; margin-bottom: 4px; }
+    .head { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .head-actions { display: flex; gap: 8px; }
+    button {
+        font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+        border: none; border-radius: 10px; padding: 9px 14px;
+        background: #fff; color: var(--ink-900); box-shadow: var(--shadow);
+    }
+    button.primary { background: var(--green-700); color: #fff; }
+    button.danger { background: transparent; color: var(--danger); box-shadow: none; padding: 6px 10px; }
+    button.danger:hover { background: #FDECE8; }
+    button:disabled { opacity: .5; cursor: default; }
+    input[type="password"] {
+        font-family: inherit; font-size: 14px; width: 100%;
+        height: 44px; padding: 0 14px; border-radius: 10px;
+        border: 1.5px solid var(--ink-300); background: #fff; outline: none;
+    }
+    input[type="password"]:focus { border-color: var(--green-700); }
+    .card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .login { max-width: 420px; margin: 12vh auto 0; padding: 28px; display: flex; flex-direction: column; gap: 14px; }
+    .msg { font-size: 13.5px; padding: 12px 14px; border-radius: 10px; display: none; }
+    .msg.error { display: block; background: #FDECE8; color: var(--danger); }
+    .msg.info  { display: block; background: var(--green-50); color: var(--green-700); }
+    table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    th, td { text-align: left; padding: 11px 14px; border-bottom: 1px solid rgba(20,22,19,.06); white-space: nowrap; }
+    td.name-cell { white-space: normal; max-width: 260px; overflow-wrap: anywhere; font-weight: 600; }
+    th { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-500); background: #FBFAF7; }
+    tr:last-child td { border-bottom: none; }
+    td .sub { display: block; font-size: 11.5px; color: var(--ink-300); font-weight: 400; }
+    a { color: var(--green-700); }
+    .count { display: inline-block; min-width: 26px; text-align: center; background: var(--green-50); color: var(--green-700); border-radius: 8px; padding: 2px 6px; font-weight: 700; }
+    .count.zero { background: #F1F0EC; color: var(--ink-300); }
+    .empty { padding: 40px 20px; text-align: center; color: var(--ink-500); font-size: 14px; }
+    .tablewrap { overflow-x: auto; }
+    #admin-view { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+    <!-- Token gate -->
+    <div id="login-view" class="card login">
+        <div>
+            <div class="eyebrow">PicnicPlus</div>
+            <h1>Admin</h1>
+        </div>
+        <div id="login-msg" class="msg"></div>
+        <input type="password" id="token-input" placeholder="Admin token" autocomplete="current-password">
+        <button class="primary" id="login-btn">Enter</button>
+    </div>
+
+    <!-- Admin dashboard -->
+    <div id="admin-view">
+        <div class="head">
+            <div>
+                <div class="eyebrow">PicnicPlus</div>
+                <h1>Picnics</h1>
+            </div>
+            <div class="head-actions">
+                <button id="refresh-btn">↻ Refresh</button>
+                <button id="logout-btn">Log out</button>
+            </div>
+        </div>
+        <div id="admin-msg" class="msg"></div>
+        <div class="card tablewrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th><th>Created</th><th>Location</th>
+                        <th>Guests</th><th>Items</th><th>Dates</th><th></th>
+                    </tr>
+                </thead>
+                <tbody id="picnic-rows"></tbody>
+            </table>
+            <div id="empty" class="empty" style="display:none;">No picnics in the database.</div>
+        </div>
+    </div>
+
+</div>
+<script>
+(() => {
+    const $ = (id) => document.getElementById(id);
+    const TOKEN_KEY = 'pp-admin-token';
+
+    const getToken = () => sessionStorage.getItem(TOKEN_KEY) || '';
+    const setToken = (t) => sessionStorage.setItem(TOKEN_KEY, t);
+    const clearToken = () => sessionStorage.removeItem(TOKEN_KEY);
+
+    const showMsg = (el, text, type) => {
+        el.className = 'msg' + (type ? ' ' + type : '');
+        el.textContent = text || '';
+    };
+
+    const api = async (path, options = {}) => {
+        const res = await fetch(path, {
+            ...options,
+            headers: { 'X-Admin-Token': getToken(), ...(options.headers || {}) }
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            const err = new Error(body.error || ('HTTP ' + res.status));
+            err.status = res.status;
+            throw err;
+        }
+        return body;
+    };
+
+    const showView = (admin) => {
+        $('login-view').style.display = admin ? 'none' : 'flex';
+        $('admin-view').style.display = admin ? 'block' : 'none';
+    };
+
+    const fmtDate = (iso) => {
+        const d = new Date(iso);
+        return isNaN(d) ? String(iso) : d.toLocaleString();
+    };
+
+    const countCell = (n) => {
+        const span = document.createElement('span');
+        span.className = 'count' + (Number(n) === 0 ? ' zero' : '');
+        span.textContent = n;
+        return span;
+    };
+
+    const renderRows = (picnics) => {
+        const tbody = $('picnic-rows');
+        tbody.replaceChildren();
+        $('empty').style.display = picnics.length ? 'none' : 'block';
+
+        picnics.forEach(p => {
+            const tr = document.createElement('tr');
+
+            const name = document.createElement('td');
+            name.className = 'name-cell';
+            name.textContent = p.name;
+            const idSub = document.createElement('span');
+            idSub.className = 'sub';
+            idSub.textContent = p.id;
+            name.appendChild(idSub);
+
+            const created = document.createElement('td');
+            created.textContent = fmtDate(p.created_at);
+
+            const loc = document.createElement('td');
+            const locLink = document.createElement('a');
+            locLink.href = `https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lon}#map=16/${p.lat}/${p.lon}`;
+            locLink.target = '_blank';
+            locLink.rel = 'noopener';
+            locLink.textContent = `${Number(p.lat).toFixed(4)}, ${Number(p.lon).toFixed(4)}`;
+            loc.appendChild(locLink);
+
+            const guests = document.createElement('td');
+            guests.appendChild(countCell(p.participant_count));
+            const items = document.createElement('td');
+            items.appendChild(countCell(p.item_count));
+            const dates = document.createElement('td');
+            dates.appendChild(countCell(p.date_count));
+
+            const actions = document.createElement('td');
+            const openLink = document.createElement('a');
+            openLink.href = `/#picnic=${encodeURIComponent(p.id)}`;
+            openLink.target = '_blank';
+            openLink.rel = 'noopener';
+            openLink.textContent = 'Open';
+            const delBtn = document.createElement('button');
+            delBtn.className = 'danger';
+            delBtn.textContent = 'Delete';
+            delBtn.addEventListener('click', async () => {
+                if (!confirm(`Delete picnic "${p.name}" and all its guests, items and dates?`)) return;
+                delBtn.disabled = true;
+                try {
+                    await api(`/api/admin/picnics/${encodeURIComponent(p.id)}`, { method: 'DELETE' });
+                    showMsg($('admin-msg'), `Deleted "${p.name}".`, 'info');
+                    load();
+                } catch (err) {
+                    showMsg($('admin-msg'), err.message, 'error');
+                    delBtn.disabled = false;
+                }
+            });
+            actions.style.textAlign = 'right';
+            actions.append(openLink, document.createTextNode(' '), delBtn);
+
+            tr.append(name, created, loc, guests, items, dates, actions);
+            tbody.appendChild(tr);
+        });
+    };
+
+    const load = async () => {
+        try {
+            const picnics = await api('/api/admin/picnics');
+            showView(true);
+            renderRows(picnics);
+        } catch (err) {
+            if (err.status === 401 || err.status === 503) {
+                clearToken();
+                showView(false);
+                showMsg($('login-msg'), err.message, 'error');
+            } else {
+                // Show the error on whichever view is currently visible.
+                const adminVisible = $('admin-view').style.display === 'block';
+                showMsg(adminVisible ? $('admin-msg') : $('login-msg'), err.message, 'error');
+            }
+        }
+    };
+
+    $('login-btn').addEventListener('click', () => {
+        const token = $('token-input').value.trim();
+        if (!token) return;
+        setToken(token);
+        $('token-input').value = '';
+        showMsg($('login-msg'), '');
+        load();
+    });
+    $('token-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') $('login-btn').click(); });
+    $('refresh-btn').addEventListener('click', () => { showMsg($('admin-msg'), ''); load(); });
+    $('logout-btn').addEventListener('click', () => { clearToken(); showMsg($('login-msg'), ''); showView(false); });
+
+    if (getToken()) load(); else showView(false);
+})();
+</script>
+</body>
+</html>

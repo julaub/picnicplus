@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import pool from './db.js';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import { timingSafeEqual } from 'crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -37,6 +38,61 @@ io.on('connection', (socket) => {
 const notifyPicnicUpdated = (picnicId) => {
     io.to(picnicId).emit('picnic-updated', { picnicId });
 };
+
+// --- ADMIN ---
+// Admin routes are gated by the ADMIN_TOKEN env var. If it isn't set, the
+// admin API is disabled entirely. The token is sent as an X-Admin-Token
+// header by public/admin.html.
+const requireAdmin = (req, res, next) => {
+    const adminToken = process.env.ADMIN_TOKEN;
+    if (!adminToken) {
+        return res.status(503).json({ error: 'Admin interface disabled: ADMIN_TOKEN is not configured' });
+    }
+    const provided = Buffer.from(String(req.get('x-admin-token') || ''));
+    const expected = Buffer.from(adminToken);
+    if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) {
+        return res.status(401).json({ error: 'Invalid admin token' });
+    }
+    next();
+};
+
+// List all picnics with per-picnic counts
+app.get('/api/admin/picnics', requireAdmin, async (req, res) => {
+    try {
+        const [rows] = await pool.query(`
+            SELECT p.id, p.name, p.lat, p.lon, p.created_at,
+                   COUNT(DISTINCT pa.id) AS participant_count,
+                   COUNT(DISTINCT pi.id) AS item_count,
+                   COUNT(DISTINCT pd.id) AS date_count
+            FROM picnics p
+            LEFT JOIN participants pa ON pa.picnic_id = p.id
+            LEFT JOIN potluck_items pi ON pi.picnic_id = p.id
+            LEFT JOIN picnic_dates pd ON pd.picnic_id = p.id
+            GROUP BY p.id
+            ORDER BY p.created_at DESC
+        `);
+        res.json(rows);
+    } catch (error) {
+        console.error('Error listing picnics (admin):', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Delete a picnic (children are removed via ON DELETE CASCADE)
+app.delete('/api/admin/picnics/:id', requireAdmin, async (req, res) => {
+    const picnicId = req.params.id;
+    try {
+        const [result] = await pool.query('DELETE FROM picnics WHERE id = ?', [picnicId]);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Picnic not found' });
+        }
+        notifyPicnicUpdated(picnicId);
+        res.json({ message: 'Picnic deleted' });
+    } catch (error) {
+        console.error('Error deleting picnic (admin):', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
 
 // --- API ROUTES ---
 
