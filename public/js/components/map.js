@@ -1,3 +1,5 @@
+import { escapeHtml } from '../utils/escape.js';
+
 export const initializeMap = (containerId) => {
     const map = L.map(containerId, {
         zoomControl: false // We will add it manually for positioning
@@ -34,8 +36,33 @@ export const initializeMap = (containerId) => {
     const highlightLayer = L.layerGroup().addTo(map);
     const emojiMarkerLayer = L.layerGroup().addTo(map);
     const userMarkerLayer = L.layerGroup().addTo(map);
+    const picnicMarkerLayer = L.layerGroup().addTo(map);
 
-    return { map, highlightLayer, emojiMarkerLayer, userMarkerLayer };
+    return { map, highlightLayer, emojiMarkerLayer, userMarkerLayer, picnicMarkerLayer };
+};
+
+// Small pin marking the exact picnic location (useful inside big parks).
+// Deliberately compact so it doesn't cover the map; the event name shows
+// as a tooltip on hover/tap.
+export const showPicnicMarker = ({ picnicMarkerLayer }, lat, lon, name) => {
+    if (!picnicMarkerLayer) return;
+    picnicMarkerLayer.clearLayers();
+    const icon = L.divIcon({
+        className: '',
+        html: `<div class="pp-picnic-marker">
+            <svg viewBox="0 0 24 32" width="24" height="32" aria-hidden="true">
+                <path d="M12 1C6.2 1 1.5 5.7 1.5 11.5c0 7.3 8.6 18 9.6 19.1a1.2 1.2 0 0 0 1.8 0c1-1.1 9.6-11.8 9.6-19.1C22.5 5.7 17.8 1 12 1z"
+                      fill="var(--sun-600, #E76A2C)" stroke="#fff" stroke-width="1.6"/>
+                <circle cx="12" cy="11.5" r="4" fill="#fff"/>
+            </svg>
+        </div>`,
+        iconSize: [24, 32],
+        iconAnchor: [12, 31]
+    });
+    const marker = L.marker([lat, lon], { icon, keyboard: false }).addTo(picnicMarkerLayer);
+    if (name) {
+        marker.bindTooltip(escapeHtml(name), { direction: 'top', offset: [0, -30] });
+    }
 };
 
 // Per-render bookkeeping so selectClusterPin() can find markers by cluster index.

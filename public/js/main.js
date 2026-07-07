@@ -3,7 +3,7 @@ import { conditionDefinitions } from './utils/conditions.js';
 import { t, tp, getLocale, setLocale, LOCALES, applyDomTranslations, onLocaleChange } from './i18n.js';
 import { searchLocation } from './api/search.js';
 import { buildOverpassQuery, fetchAmenities, clusterAmenities, filterByConditions } from './api/overpass.js';
-import { initializeMap, renderClusters, selectClusterPin, focusCluster } from './components/map.js';
+import { initializeMap, renderClusters, selectClusterPin, focusCluster, showPicnicMarker } from './components/map.js';
 import { initSpotDetail, showSpot as showSpotDetail, hide as hideSpotDetail, isOpen as isSpotDetailOpen } from './components/spot-detail.js';
 import { initResultsList, updateResults, clearResults } from './components/results-list.js';
 import { initializeNavigation } from './components/navigation.js';
@@ -536,6 +536,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         await createPicnic(picnicName, lat, lon, organizerName, dateText, timeText, amenities);
         updateStatus(t('status.event_created'), 'success');
 
+        // Pin the exact picnic spot on the map right away
+        if (state.picnicDetails) {
+            showPicnicMarker(mapState, state.picnicDetails.lat, state.picnicDetails.lon, state.picnicDetails.name);
+        }
+
         // Switch to Picnic tab to show creation success and the dashboard
         document.querySelector('.pp-nav-item[data-target="view-picnic"]').click();
     };
@@ -682,10 +687,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             }, 500);
         }
 
-        // Move view to picnic location
+        // Move view to the picnic location and pin the exact spot
         if (state.picnicDetails) {
             map.setView([state.picnicDetails.lat, state.picnicDetails.lon], 16);
-            L.marker([state.picnicDetails.lat, state.picnicDetails.lon]).addTo(map).bindPopup(`<b>${state.picnicDetails.name}</b>`).openPopup();
+            showPicnicMarker(mapState, state.picnicDetails.lat, state.picnicDetails.lon, state.picnicDetails.name);
         }
 
         // Switch to the picnic tab when joining via URL
