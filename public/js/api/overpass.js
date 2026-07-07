@@ -232,44 +232,53 @@ export const clusterAmenities = (elements, effectiveAmenities, radius) => {
     return { clusters, allItems };
 };
 
-export const filterByConditions = async (clusters, conditions, bboxRadius, logic = 'AND', { signal } = {}) => {
-    if (conditions.length === 0 || clusters.length === 0) return clusters;
+export const filterByConditions = async (clusters, conditions, logic = 'AND', { signal } = {}) => {
+    const knownConditions = conditions.filter(cond => conditionDefinitions[cond.type]);
+    if (knownConditions.length === 0 || clusters.length === 0) return clusters;
 
-    // We do one big query for conditions around all clusters
+    // One bbox query per condition covering all clusters, instead of 3
+    // around-statements per cluster×condition — that older form grew to
+    // thousands of statements on large result sets and made Overpass time
+    // out. The exact per-cluster distance check happens client-side below,
+    // so a bbox superset is all we need from the server.
+    let s = Infinity, w = Infinity, n = -Infinity, e = -Infinity;
+    clusters.forEach(c => {
+        s = Math.min(s, c.center[0]); n = Math.max(n, c.center[0]);
+        w = Math.min(w, c.center[1]); e = Math.max(e, c.center[1]);
+    });
+    // Expand by the largest condition distance (metres → degrees).
+    const maxDist = Math.max(...knownConditions.map(c => c.distance));
+    const dLat = maxDist / 111320;
+    const cosLat = Math.max(0.1, Math.cos(((s + n) / 2) * Math.PI / 180));
+    const dLon = maxDist / (111320 * cosLat);
+    const bbox = `${s - dLat},${w - dLon},${n + dLat},${e + dLon}`;
+
     let query = `[out:json][timeout:90];\n(\n`;
-    conditions.forEach(cond => {
-        const def = conditionDefinitions[cond.type];
-        if (!def) return;
-        const [k, v] = def.queryTag.split('=');
-
-        clusters.forEach(cluster => {
-            const lat = cluster.center[0];
-            const lon = cluster.center[1];
-            query += `  node["${k}"="${v}"](around:${cond.distance},${lat},${lon});\n`;
-            query += `  way["${k}"="${v}"](around:${cond.distance},${lat},${lon});\n`;
-            query += `  relation["${k}"="${v}"](around:${cond.distance},${lat},${lon});\n`;
-        });
+    knownConditions.forEach(cond => {
+        const [k, v] = conditionDefinitions[cond.type].queryTag.split('=');
+        query += `  node["${k}"="${v}"](${bbox});\n`;
+        query += `  way["${k}"="${v}"](${bbox});\n`;
+        query += `  relation["${k}"="${v}"](${bbox});\n`;
     });
     query += `); out center;\n\n`;
 
     const conditionData = await fetchAmenities(query, { signal });
     const condElements = conditionData.elements || [];
 
-    return clusters.filter(cluster => {
-        const lat = cluster.center[0];
-        const lon = cluster.center[1];
+    // Pre-bucket elements per condition once, rather than re-scanning the
+    // full element list for every cluster.
+    const condBuckets = knownConditions.map(cond => {
+        const [k, v] = conditionDefinitions[cond.type].queryTag.split('=');
+        const els = condElements
+            .filter(el => el.tags && el.tags[k] === v)
+            .map(el => ({ lat: el.lat || (el.center && el.center.lat), lon: el.lon || (el.center && el.center.lon) }))
+            .filter(el => el.lat && el.lon);
+        return { distance: cond.distance, els };
+    });
 
-        const matches = cond => {
-            const def = conditionDefinitions[cond.type];
-            const [k, v] = def.queryTag.split('=');
-            return condElements.some(el => {
-                if (!(el.tags && el.tags[k] === v)) return false;
-                const elLat = el.lat || (el.center && el.center.lat);
-                const elLon = el.lon || (el.center && el.center.lon);
-                if (!elLat || !elLon) return false;
-                return calculateDistance(lat, lon, elLat, elLon) <= cond.distance;
-            });
-        };
-        return logic === 'OR' ? conditions.some(matches) : conditions.every(matches);
+    return clusters.filter(cluster => {
+        const [lat, lon] = cluster.center;
+        const matches = b => b.els.some(el => calculateDistance(lat, lon, el.lat, el.lon) <= b.distance);
+        return logic === 'OR' ? condBuckets.some(matches) : condBuckets.every(matches);
     });
 };

@@ -630,7 +630,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (addedConditions.length > 0 && finalClusters.length > 0) {
                 updateStatus(t('status.checking_proximity', { n: finalClusters.length }), 'loading');
-                finalClusters = await filterByConditions(finalClusters, addedConditions, radius, proxLogicMode, { signal });
+                finalClusters = await filterByConditions(finalClusters, addedConditions, proxLogicMode, { signal });
             }
 
             renderClusters(finalClusters, radius, mapState, {
