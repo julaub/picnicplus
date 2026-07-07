@@ -75,6 +75,7 @@ export default {
     'status.event_created': 'Event created! Share the URL with friends.',
     'status.search_error': 'Error executing search: {{message}}',
     'status.search_cancelled': 'Search stopped. Pan the map or adjust filters, then search again.',
+    'event.amenities': 'On-site amenities',
     'status.reset_link': 'Reset filters',
     'status.found_one': 'Found 1 beautiful picnic spot!',
     'status.found_other': 'Found {{count}} beautiful picnic spots!',

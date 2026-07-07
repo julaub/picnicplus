@@ -7,8 +7,12 @@ CREATE TABLE IF NOT EXISTS picnics (
     name VARCHAR(255) NOT NULL,
     lat FLOAT NOT NULL,
     lon FLOAT NOT NULL,
+    -- JSON array of amenity keys present at the spot (e.g. ["bbq","toilets"])
+    amenities TEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+-- Migration for databases created before the amenities column existed:
+-- ALTER TABLE picnics ADD COLUMN amenities TEXT NULL;
 
 CREATE TABLE IF NOT EXISTS participants (
     id INT AUTO_INCREMENT PRIMARY KEY,

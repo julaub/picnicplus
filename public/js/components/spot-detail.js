@@ -96,7 +96,7 @@ const render = (cluster, ctx = {}) => {
 
     _root.querySelector('.pp-spot-close').addEventListener('click', hide);
     _root.querySelector('#pp-spot-use').addEventListener('click', () => {
-        _onCreateEvent?.(cluster.center[0], cluster.center[1], name);
+        _onCreateEvent?.(cluster.center[0], cluster.center[1], name, cluster.types || []);
     });
 };
 

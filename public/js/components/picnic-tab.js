@@ -1,4 +1,5 @@
 import { state, proposeDateApi, toggleVoteApi } from '../state.js';
+import { amenityDefinitions } from '../utils/amenities.js';
 import { escapeHtml } from '../utils/escape.js';
 import { requestDateAndTime } from './date-picker.js';
 import { generateQRCodeUrl } from '../utils/qr.js';
@@ -143,6 +144,30 @@ export const initPicnicTab = (containerId) => {
             const el = document.getElementById('event-location-name');
             if (el) el.textContent = name || `${parseFloat(lat).toFixed(4)}, ${parseFloat(lon).toFixed(4)}`;
         });
+
+        // ── On-site amenities (from the spot the event was created on) ──
+        // Only known amenity keys are rendered; emoji/labels come from local
+        // definitions, so nothing user-supplied ends up in the markup.
+        const amenityKeys = (state.picnicDetails.amenities || []).filter(key => amenityDefinitions[key]);
+        if (amenityKeys.length > 0) {
+            const amWrap = document.createElement('div');
+            amWrap.style.cssText = 'padding:12px 16px 0;';
+            const amTile = document.createElement('div');
+            amTile.className = 'pp-event-tile';
+            amTile.style.alignItems = 'flex-start';
+            const chips = amenityKeys.map(key => `
+                <span style="display:inline-flex;align-items:center;gap:5px;background:var(--green-50);color:var(--green-700);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;">
+                    <span>${amenityDefinitions[key].emoji}</span>${t(`amenity.${key}`)}
+                </span>`).join('');
+            amTile.innerHTML = `
+                <div class="pp-tile-icon" style="background:var(--green-50);color:var(--green-700);">🧺</div>
+                <div class="pp-tile-body">
+                    <div class="pp-tile-label">${t('event.amenities')}</div>
+                    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">${chips}</div>
+                </div>`;
+            amWrap.appendChild(amTile);
+            scroll.appendChild(amWrap);
+        }
 
         // ── Stat row ──
         const statRow = document.createElement('div');

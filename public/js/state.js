@@ -51,7 +51,7 @@ export const fetchPicnic = async (id, isBackgroundUpdate = false) => {
         const data = await res.json();
 
         state.picnicId = data.id;
-        state.picnicDetails = { name: data.name, lat: data.lat, lon: data.lon };
+        state.picnicDetails = { name: data.name, lat: data.lat, lon: data.lon, amenities: data.amenities || [] };
         state.participants = data.participants;
         state.potluckItems = data.potluckItems;
         state.dates = data.dates || [];
@@ -82,12 +82,12 @@ export const fetchPicnic = async (id, isBackgroundUpdate = false) => {
 };
 
 // API: Create Picnic
-export const createPicnic = async (name, lat, lon, organizerName, dateText, timeText) => {
+export const createPicnic = async (name, lat, lon, organizerName, dateText, timeText, amenities = []) => {
     try {
         const res = await fetch(`${API_BASE}/picnics`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, lat, lon, organizerName, avatar: '👑', dateText, timeText })
+            body: JSON.stringify({ name, lat, lon, organizerName, avatar: '👑', dateText, timeText, amenities })
         });
         if (!res.ok) throw new Error('Failed to create picnic');
         const data = await res.json();

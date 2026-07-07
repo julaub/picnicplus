@@ -98,7 +98,7 @@ app.delete('/api/admin/picnics/:id', requireAdmin, async (req, res) => {
 
 // Create a new picnic
 app.post('/api/picnics', async (req, res) => {
-    const { name, lat, lon, organizerName, avatar, dateText, timeText } = req.body;
+    const { name, lat, lon, organizerName, avatar, dateText, timeText, amenities } = req.body;
 
     if (!name || !lat || !lon || !organizerName) {
         return res.status(400).json({ error: 'Missing required fields' });
@@ -111,6 +111,11 @@ app.post('/api/picnics', async (req, res) => {
     const pAvatar = avatar ? String(avatar) : '👑';
     const safeDateText = dateText ? String(dateText) : null;
     const safeTimeText = timeText ? String(timeText) : null;
+    // Amenity keys present at the spot; stored as a JSON array, bounded so a
+    // client can't stuff arbitrary payloads into the column.
+    const safeAmenities = Array.isArray(amenities)
+        ? JSON.stringify(amenities.filter(a => typeof a === 'string' && a.length <= 50).slice(0, 40))
+        : null;
 
     try {
         const connection = await pool.getConnection();
@@ -119,8 +124,8 @@ app.post('/api/picnics', async (req, res) => {
         try {
             // Insert picnic
             await connection.query(
-                'INSERT INTO picnics (id, name, lat, lon) VALUES (?, ?, ?, ?)',
-                [picnicId, safeName, lat, lon]
+                'INSERT INTO picnics (id, name, lat, lon, amenities) VALUES (?, ?, ?, ?, ?)',
+                [picnicId, safeName, lat, lon, safeAmenities]
             );
 
             // Insert organizer
@@ -217,8 +222,14 @@ app.get('/api/picnics/:id', async (req, res) => {
             });
         }
 
+        // amenities is stored as a JSON string; hand clients a real array.
+        let amenities = [];
+        try { amenities = picnic.amenities ? JSON.parse(picnic.amenities) : []; } catch (_) {}
+        if (!Array.isArray(amenities)) amenities = [];
+
         res.json({
             ...picnic,
+            amenities,
             participants,
             dates: datesWithVotes,
             potluckItems: potluckItemsRows.map(item => ({

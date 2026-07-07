@@ -68,10 +68,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     };
 
-    // Spot-detail sheet init: "Use this spot" creates the event at the cluster's coords.
+    // Spot-detail sheet init: "Use this spot" creates the event at the cluster's
+    // coords, carrying the amenity types present there.
     initSpotDetail({
-        onCreateEvent: (lat, lon) => {
-            window.createPicnicPrompt?.(lat, lon);
+        onCreateEvent: (lat, lon, name, types) => {
+            window.createPicnicPrompt?.(lat, lon, types);
             hideSpotDetail();
             selectClusterPin(null);
         },
@@ -517,8 +518,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    // Feature selection exposing to global for the popup button
-    window.createPicnicPrompt = async (lat, lon) => {
+    // Feature selection exposing to global for the popup button.
+    // `amenities` is the list of amenity keys present at the spot (empty for
+    // pins dropped on an arbitrary map location).
+    window.createPicnicPrompt = async (lat, lon, amenities = []) => {
         map.closePopup();
         const picnicName = prompt(t('map.prompt_event'));
         if (!picnicName) return;
@@ -530,7 +533,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { dateText, timeText } = dateResult;
 
         updateStatus(t('status.creating_event'), 'loading');
-        await createPicnic(picnicName, lat, lon, organizerName, dateText, timeText);
+        await createPicnic(picnicName, lat, lon, organizerName, dateText, timeText, amenities);
         updateStatus(t('status.event_created'), 'success');
 
         // Switch to Picnic tab to show creation success and the dashboard
